@@ -1,0 +1,20 @@
+.fake
+.vs
+.ionide
+artiacts/
+bin/
+obj/
+cache/
+build/
+node_modules/
+
+# Suspicious items
+flat.sol 
+smart-contracts/dEth2/contracts/block.json
+smart-contracts/dEth2/tests/paket.lock
+smart-contracts/dEth2/tests/launch-remixd.sh
+smart-contracts/dEth2/tests/launch-hardhat.sh
+.DS_Store
+
+# Obviously invalid
+#package-lock.json
