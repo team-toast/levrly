@@ -49,6 +49,7 @@ contract ILongShortPairToken is
     uint public panicRangeFeePERC;
 
     address public gulper;
+    address public issuerFeeAccount;
 
     // can be issued with long, short, or interest tokens
     function issue(Asset _assetSupplied, address _receiver, uint _amount) public;
@@ -57,18 +58,25 @@ contract ILongShortPairToken is
     function issueWithShort(address _receiver, uint _shortAmount) public;
 
     // can redeem to long, short, or interest tokens
-    function redeem(Asset _assetRequested, address _issuer, uint _amount) public;
+    function redeem(Asset _assetRequested, address _receiver, uint _amount) public;
     // unsure if these should be hidden inside of the redeem function
     function redeemToLong(address _receiver, uint _amount) public;
     function redeemToShort(address _receiver, uint _amount) public;
     
-    // cannot trade long and interest tokens, can trade short and interest tokens or long and short tokens
-    function trade(Asset _inAsset, Asset _outAsset, uint _amountIn, unt _expirationTime) public;
+    // allows trading of coins by external party
+    // TODO: May need to refine this to allow minimum slippage
+    function trade(Asset _inAsset, uint _amountIn, uint _minAmountOut, uint _expirationTime) public;
     // unsure if these should be hidden inside of the trade function
     function tradeCollatralForShort(address _receiver, uint _longAmount, uint _expirationTime) public;
     function tradeShortForLong(address _receiver, uint _shortAmount, uint _expirationTime) public;
     
-    function changeSettings(uint _redemptionRatioLimit, uint _lowerRatio, uint _targetRatio, uint _upperRatio) public;
+    function changeSettings(
+            uint _redemptionRatioLimit, 
+            uint _lowerRatio, 
+            uint _targetRatio, 
+            uint _upperRatio,
+            uint _automationFee) 
+        public;
 
     function getRatio() public view returns (uint _ratio);
     function getInfo() 
@@ -79,7 +87,7 @@ contract ILongShortPairToken is
             uint _longAmount, 
             uint _shortPrice, 
             uint _shortAmount,
-            uint _longDenomenatedShort,
+            uint _longBalanceDenomenatedInShort,
             uint _excessLong);
     
     function calculateIssuanceAmount_UsingLong(uint _longAmount) 
@@ -141,6 +149,7 @@ contract ILongShortPairToken is
         view
         returns (uint _longAmount);
 
+    // TODO : extend this to allow for a user supplying debt
     event Issued(
         address _receiver, 
         uint _suppliedLong,
@@ -177,3 +186,9 @@ contract ILongShortPairToken is
         uint _automationFee,
         uint _issuerFee);
 }
+
+// Naming convention for pairs:
+// lLONGsSHORTxLEVERAGE
+// examples:
+// lDAIsETHx2
+// lETHsWBTCx3
