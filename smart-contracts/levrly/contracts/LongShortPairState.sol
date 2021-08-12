@@ -51,7 +51,9 @@ contract LongShortPairState
 
     // NOTE: Uniswap did exactly this, they dictated the fees to the market and the
     // market loved it. Think about it, if they had multiple fee options on a scale
-    // they would have split up the 
+    // they would have split up the liquidity.
+    // So what if we use "tolerable" fees like 0.5% for the protocol and 0.5% for
+    // the pool holders?
     
     // fee recipients
     address public gulper;
