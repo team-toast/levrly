@@ -27,7 +27,7 @@ contract LongShortPairState
 
     // Ratios
     // The PERC suffix indicates that the ratio is expressed as a percentage
-    uint public minRedemptionRatioPERC; 
+    uint public redemptionRatioLimitPERC; 
     uint public lowerRatioPERC;
     uint public targetRatioPERC;
     uint public upperRatioPERC;
@@ -53,7 +53,7 @@ contract LongShortPairState
     // market loved it. Think about it, if they had multiple fee options on a scale
     // they would have split up the liquidity.
     // So what if we use "tolerable" fees like 0.5% for the protocol and 0.5% for
-    // the pool holders?
+    // the pool holders and accept those as standard?
     
     // fee recipients
     address public gulper;

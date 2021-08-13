@@ -171,8 +171,8 @@ contract ILSP_AMMToken is ILongShortPairToken
         returns (uint _longAmount);
 
     event Trade(
-        Asset _inAsset,
-        Asset _outAsset,
+        Types.Asset _inAsset,
+        Types.Asset _outAsset,
         address _receiver,
         uint _inAmount,
         uint _outAmount);
@@ -180,32 +180,40 @@ contract ILSP_AMMToken is ILongShortPairToken
 
 contract LongShortPairToken is
     ILongShortPairToken,
+    LongShortPairState,
     ERC20Detailed,
     ERC20, 
     DSProxy,
     DSMath 
 {
     constructor(
-        // what we're longing and what we're shorting
-        IERC20 _longToken,
-        IERC20 _interestToken,
-        IERC20 _shortToken,
-        IERC20 _debtToken,
+            // what we're longing and what we're shorting
+            IERC20 _longToken,
+            IERC20 _interestToken,
+            IERC20 _shortToken,
+            IERC20 _debtToken,
 
-        // what the ratios are
-        uint _minRedemptionRatioLimit,
-        uint _lowerRatio,
-        uint _targetRatio,
-        uint _upperRatio,
+            // what the ratios are
+            uint _redemptionRatioLimitPERC, // target - 40 => 160
+            uint _lowerRatioPERC,               // target - 20 => 180
+            uint _targetRatioPERC,              // target      => 200
+            uint _upperRatioPERC,               // target + 20 => 220
+            /*
+            uint _lowerDefiSaverRatio       // _lowerRatio - 10 => 170
+            uint _upperDefiSaverRatio      // _upperRatio + 10 => 230
+            */
 
-        // what the issuance fees are
-        uint _automationFeePERC,
-        uint _issuerFeePERC,
-        // protocolFeePERC is hardcoded and not changable by anyone
+            // what the issuance fees are
+            uint _automationFeePERC,
+            uint _issuerFeePERC,
 
-        // where the fees go
-        // gulper is hardcoded and only settable by Foundry
-        address _issuerFeeAccount)
+            // the reward for resolving the excess debt.
+            uint _settlementRewardPERC,
+
+            // where the fees go
+            // gulper is hardcoded and only settable by Foundry
+            address _issuerFeeAccount)
+        public
     {
         // set the token variables
         longToken = _longToken;
@@ -214,69 +222,16 @@ contract LongShortPairToken is
         debtToken = _debtToken;         // should this rather be looked up?
 
         // set the ratio variables
-        minRedemptionRatioLimitPERC = _minRedemptionRatioLimitPERC;
+        redemptionRatioLimitPERC = _redemptionRatioLimitPERC;
         lowerRatioPERC = _lowerRatioPERC;   // should this just be range variable? IE 10%
         targetRatioPERC = _targetRatioPERC; // should this just be a midpoint? like 150% with ranges being 140%-160% is range is 10%? 
         upperRatioPERC = _upperRatioPERC;
 
         // set the issuance fee variables
         automationFeePERC = _automationFeePERC;
-        issuerFeePERC = _issuerFeePERC;    // should this be left out for now?
         protocolFeePERC = 9 * 10**15;
 
-        // set the trading fee variables
-        withinRangeFeePERC = _withinRangeFeePERC; // should this be 0 by default? 
-        aboveRangeFeePERC = _aboveRangeFeePERC;   // should this be positive or negative?
-        belowRangeFeePERC = _belowRangeFeePERC;   // this should probably be negative...
-        panicRangeFeePERC = _panicRangeFeePERC;   // this should definitely be negative, but that might open up attack vectors...
-
-        // set the fee accounts
-        issuerFeeAccount = _issuerFeeAccount;   // should this be left out for now?
-        gulper = 0x123;
-    }
-
-    constructor(
-        // what we're longing and what we're shorting
-        IERC20 _longToken,
-        IERC20 _shortToken,
-
-        // what the ratios are
-        uint _minRedemptionRatioLimitPERC,
-        uint _targetRatioPERC,
-        uint _safeRangePERC, // how much above or below this is allowed to be from the target range
-
-        // what the issuance fees are
-        uint _automationFeePERC,
-        // protocolFeePERC is hardcoded and not changable by anyone
-
-        // what the trading fees are
-        uint _aboveRangeFeePERC,
-        uint _belowRangeFeePERC,
-        uint _panicRangeFeePERC)
-    {
-        // set the token variables
-        longToken = _longToken;
-        interestToken = _interestToken; // should this rather be looked up?
-        shortToken = _shortToken;
-        debtToken = _debtToken;         // should this rather be looked up?
-
-        // set the ratio variables
-        minRedemptionRatioLimitPERC = _minRedemptionRatioLimitPERC;
-        lowerRatioPERC = _targetRatioPERC.sub(_safeRangePERC);   // should this just be range variable? IE 10%
-        targetRatioPERC = _targetRatioPERC; // should this just be a midpoint? like 150% with ranges being 140%-160% is range is 10%? 
-        upperRatioPERC = _upperRatioPERC.add(_safeRangePERC);
-
-        // set the issuance fee variables
-        automationFeePERC = _automationFeePERC;
-        protocolFeePERC = 9 * 10**15;
-
-        // set the trading fee variables
-        withinRangeFeePERC = 0; // should this be 0 by default? 
-        aboveRangeFeePERC = _aboveRangeFeePERC;   // should this be positive or negative?
-        belowRangeFeePERC = _belowRangeFeePERC;   // this should probably be negative...
-        panicRangeFeePERC = _panicRangeFeePERC;   // this should definitely be negative, but that might open up attack vectors...
-
-        // set the fee accounts
+        // set the fee account(s)
         gulper = 0x123;
     }
 }
