@@ -9,13 +9,9 @@ import "./DSMath.sol";
 import "./DSProxy.sol";
 import "./LongShortPairState.sol";
 
-// TODO : automation fee should be optional if the user moves the ratio closer to the targetRatio.
-
 // Ideas to make this less work:
-// 1. move the range to a fixed 10% above, 10% below.
-// 2. remove the issuer concept until a later version
-// 3. make the automationFee fixed
-// 4. make the settlementFee fixed
+// 1. make the automationFee fixed
+// 2. make the settlementFee fixed
  
 contract ILongShortPairToken
 {
@@ -145,39 +141,6 @@ contract ILongShortPairToken
         uint _issuerFee);
 }
 
-contract ILSP_AMMToken is ILongShortPairToken
-{
-    // allows trading of coins by external party
-    // TODO: May need to refine this to allow minimum slippage
-    function trade(Types.Asset _inAsset, uint _amountIn, uint _minAmountOut, uint _expirationTime) public;
-    // unsure if these should be hidden inside of the trade function
-    function tradeCollatralForShort(address _receiver, uint _longAmount, uint _expirationTime) public;
-    function tradeShortForLong(address _receiver, uint _shortAmount, uint _expirationTime) public;
-
-    // This function returns the exact amount of the short token that would be returned for
-    // the given amount of the long token.
-    // It will not run if the collateralization ratio is below the target ratio.
-    function calculateTradeOutput_LongForShort(uint _longAmount)
-        public  
-        view
-        returns (uint _shortAmount); 
-    
-    // This function returns the exact amount of the long token that would be returned for
-    // the given amount of the short token.
-    // It will not run if the collateralization ratio is above the target ratio.
-    function calculateTradeOutput_ShortForLong(uint _shortAmount)
-        public
-        view
-        returns (uint _longAmount);
-
-    event Trade(
-        Types.Asset _inAsset,
-        Types.Asset _outAsset,
-        address _receiver,
-        uint _inAmount,
-        uint _outAmount);
-}
-
 contract LongShortPairToken is
     ILongShortPairToken,
     LongShortPairState,
@@ -187,6 +150,12 @@ contract LongShortPairToken is
     DSMath 
 {
     constructor(
+            // names
+            string memory _code,
+            string memory _name,
+
+            address _DSProxyCache,
+
             // what we're longing and what we're shorting
             IERC20 _longToken,
             IERC20 _interestToken,
@@ -194,45 +163,45 @@ contract LongShortPairToken is
             IERC20 _debtToken,
 
             // what the ratios are
-            uint _redemptionRatioLimitPERC, // target - 40 => 160
+            uint _redemptionRatioLimitPERC,     // target - 40 => 160
             uint _lowerRatioPERC,               // target - 20 => 180
             uint _targetRatioPERC,              // target      => 200
             uint _upperRatioPERC,               // target + 20 => 220
             /*
-            uint _lowerDefiSaverRatio       // _lowerRatio - 10 => 170
-            uint _upperDefiSaverRatio      // _upperRatio + 10 => 230
+            uint _lowerDefiSaverRatio           // _lowerRatio - 10 => 170
+            uint _upperDefiSaverRatio           // _upperRatio + 10 => 230
             */
 
             // what the issuance fees are
             uint _automationFeePERC,
-            uint _issuerFeePERC,
 
             // the reward for resolving the excess debt.
-            uint _settlementRewardPERC,
-
-            // where the fees go
-            // gulper is hardcoded and only settable by Foundry
-            address _issuerFeeAccount)
+            uint _settlementRewardPERC)
         public
+            DSProxy(_DSProxyCache) //_proxyCache on mainnet
+            ERC20Detailed(_name, _code, 18)
     {
         // set the token variables
         longToken = _longToken;
-        interestToken = _interestToken; // should this rather be looked up?
+        interestToken = _interestToken;
         shortToken = _shortToken;
-        debtToken = _debtToken;         // should this rather be looked up?
+        debtToken = _debtToken;
 
         // set the ratio variables
         redemptionRatioLimitPERC = _redemptionRatioLimitPERC;
-        lowerRatioPERC = _lowerRatioPERC;   // should this just be range variable? IE 10%
-        targetRatioPERC = _targetRatioPERC; // should this just be a midpoint? like 150% with ranges being 140%-160% is range is 10%? 
+        lowerRatioPERC = _lowerRatioPERC;
+        targetRatioPERC = _targetRatioPERC; 
         upperRatioPERC = _upperRatioPERC;
 
         // set the issuance fee variables
         automationFeePERC = _automationFeePERC;
         protocolFeePERC = 9 * 10**15;
 
+        // set the settlement reward fee percentage
+        settlementRewardPERC = _settlementRewardPERC;
+
         // set the fee account(s)
-        gulper = 0x123;
+        gulper = address(1);
     }
 }
 
