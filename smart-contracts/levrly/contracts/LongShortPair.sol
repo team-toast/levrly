@@ -12,15 +12,46 @@ import "./LongShortPairState.sol";
 // Ideas to make this less work:
 // 1. make the automationFee fixed
 // 2. make the settlementFee fixed
- 
+
+contract IPriceOracleGetter {
+    function getAssetPrice(address _asset) 
+        external 
+        view 
+        returns (uint256);
+    function getAssetsPrices(address[] calldata _assets) 
+        external 
+        view 
+        returns(uint256[] memory);
+    function getSourceOfAsset(address _asset) 
+        external 
+        view 
+        returns(address);
+    function getFallbackOracle() 
+        external 
+        view 
+        returns(address);
+}
+
 contract ILongShortPairToken
 {
     using SafeMath for uint;
 
+    // TODO: mve this to state
+    ILendingPool public lendingPool;
+    IPriceOracleGetter public priceOracle;
+
     // can be issued with long, short, or interest tokens
-    function issue(Types.Asset _assetSupplied, address _receiver, uint _amount) public;
+    function issue(
+            Types.Asset _assetSupplied, 
+            address _receiver, 
+            uint _amount) 
+        public;
     // can redeem to long, short, or interest tokens
-    function redeem(Types.Asset _assetRequested, address _receiver, uint _amount) public;
+    function redeem(
+            Types.Asset _assetRequested, 
+            address _receiver, 
+            uint _amount) 
+        public;
     // calculates the details of swapping.
     function swap(
             Types.Asset _providedAsset,     // what we're giving
@@ -149,6 +180,8 @@ contract LongShortPairToken is
     DSProxy,
     DSMath 
 {
+    using SafeMath for uint;
+
     constructor(
             // names
             string memory _code,
@@ -176,7 +209,11 @@ contract LongShortPairToken is
             uint _automationFeePERC,
 
             // the reward for resolving the excess debt.
-            uint _settlementRewardPERC)
+            uint _settlementRewardPERC,
+            
+            // AAVE price oracle
+            IPriceOracleGetter _priceOracle,
+            ILendingPool _lendingPool)
         public
             DSProxy(_DSProxyCache) //_proxyCache on mainnet
             ERC20Detailed(_name, _code, 18)
@@ -202,7 +239,125 @@ contract LongShortPairToken is
 
         // set the fee account(s)
         gulper = address(1);
+
+        priceOracle = _priceOracle;
+        lendingPool = _lendingPool;
     }
+
+    // issues the LSP by providing the longToken
+    function issue( 
+            address _receiver, 
+            uint _amount) 
+        public
+    {
+        (uint protocolFee,
+        uint automationFee,
+        uint actualLongAdded,
+        uint accreditedLong,
+        uint tokensIssued) = calculateIssuanceAmount_UsingLong(_amount);
+
+        longToken.transferFrom(msg.sender, address(this), _amount);
+        lendingPool.deposit(address(longToken), _amount, address(this), 0);    
+        interestToken.transfer(gulper, protocolFee);
+
+        emit Issued(
+            _receiver, 
+            _amount,
+            protocolFee,
+            automationFee,
+            protocolFee,
+            actualLongAdded,
+            accreditedLong,
+            tokensIssued);
+    }
+
+    function calculateIssuanceAmount_UsingLong(uint _longAmount)
+        public
+        view
+        returns (
+            uint _protocolFee,
+            uint _automationFee,
+            uint _actualLongAdded,
+            uint _accreditedLong,
+            uint _tokensIssued)
+    {
+        _protocolFee = _longAmount
+            .mul(protocolFeePERC)
+            .div(ONE_HUNDRED_PERC);
+
+        _automationFee = _longAmount
+            .mul(automationFeePERC)
+            .div(ONE_HUNDRED_PERC);
+
+        _actualLongAdded = _longAmount.sub(_protocolFee);
+
+        _accreditedLong = _actualLongAdded.sub(_automationFee);
+
+        _tokensIssued = _actualLongAdded
+            .mul(ONE_HUNDRED_PERC)
+            .div(getExcessCollateral())
+            .div(ONE_HUNDRED_PERC);
+    }
+
+    function getExcessCollateral()
+        public
+        view
+        returns (uint _excessCollateral)
+    {
+        (,,,,_excessCollateral) = getCollateral();
+    }
+
+    function getCollateral()
+        public
+        view
+        returns (
+            uint _collateralPriceWEI,
+            uint _collateralBalance,
+            uint _debtPriceWEI,
+            uint _debtBalance,
+            uint _excessCollateral)
+    {
+        _collateralPriceWEI = priceOracle.getAssetPrice(address(longToken));
+        _collateralBalance = longToken.balanceOf(address(this));
+        _debtPriceWEI = priceOracle.getAssetPrice(address(shortToken));
+        _debtBalance = shortToken.balanceOf(address(this));
+
+        uint collateralValue = _collateralBalance.mul(_collateralPriceWEI);
+        uint debtValue = _debtBalance.mul(_debtPriceWEI);
+        _excessCollateral = collateralValue.sub(debtValue).div(_collateralPriceWEI);
+    }
+}
+
+contract ILendingPool
+{
+    function deposit(
+            address asset,
+            uint256 amount,
+            address onBehalfOf,
+            uint16 referralCode) 
+        external;
+
+    function withdraw(
+            address asset,
+            uint256 amount,
+            address to) 
+        public 
+        returns (uint256);
+
+    function borrow(
+            address asset,
+            uint256 amount,
+            uint256 interestRateMode,
+            uint16 referralCode,
+            address onBehalfOf) 
+        external;
+
+    function repay(
+            address asset,
+            uint256 amount,
+            uint256 rateMode,
+            address onBehalfOf) 
+        external returns (uint256);
 }
 
 // Naming convention for pairs:
