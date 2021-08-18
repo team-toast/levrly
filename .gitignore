@@ -1,5 +1,6 @@
 .fake
 .vs
+.vscode
 .ionide
 artiacts/
 bin/
