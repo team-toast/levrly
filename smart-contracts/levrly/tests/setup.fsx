@@ -5,11 +5,13 @@ open System.Net.Http
 
 let inline (^) f x = f x
 
+
 let configration =  {|
     abiFiles = [ 
-        "https://raw.githubusercontent.com/aave/aave-protocol/master/build/contracts/LendingPool.json"
-        "https://raw.githubusercontent.com/aave/aave-protocol/master/build/contracts/ReentrancyGuard.json"
-        "https://raw.githubusercontent.com/aave/aave-protocol/master/build/contracts/VersionedInitializable.json"
+        ("LendingPool.json", "https://raw.githubusercontent.com/aave/aave-protocol/master/build/contracts/LendingPool.json")
+        ("ReentrancyGuard.json", "https://raw.githubusercontent.com/aave/aave-protocol/master/build/contracts/ReentrancyGuard.json")
+        ("VersionedInitializable.json", "https://raw.githubusercontent.com/aave/aave-protocol/master/build/contracts/VersionedInitializable.json")
+        ("Dai.json", "http://api.etherscan.io/api?module=contract&action=getabi&address=0x6b175474e89094c44da98b954eedeac495271d0f&format=raw")
     ]
     infrastructureContractsDirectory = "./tmp/"
 |}
@@ -33,11 +35,10 @@ let ensureDirectoryExists (path: string) =
 
 /// Downloads ABI files for already deployed contracts.
 let downloadFiles = 
-    [ for abiFile in configration.abiFiles -> async {
+    [ for filename, address in configration.abiFiles -> async {
         use http = new HttpClient()
-        let fileName = Path.GetFileName(abiFile)
-        let path = Path.Join(configration.infrastructureContractsDirectory, fileName)
-        let! response = http.GetAsync(abiFile) |> Async.AwaitTask
+        let path = Path.Join(configration.infrastructureContractsDirectory, filename)
+        let! response = http.GetAsync(address) |> Async.AwaitTask
         use file = File.Create(path)
         do! response.Content.CopyToAsync(file) |> Async.AwaitTask
     }]
@@ -49,3 +50,4 @@ let setupInfrastructure = async {
     }
 
 Async.RunSynchronously setupInfrastructure
+printfn "Setup done!"
