@@ -8,8 +8,8 @@ contract ILSP_AMMToken is ILongShortPairToken
     // TODO: May need to refine this to allow minimum slippage
     function trade(Types.Asset _inAsset, uint _amountIn, uint _minAmountOut, uint _expirationTime) public;
     // unsure if these should be hidden inside of the trade function
-    function tradeCollatralForShort(address _receiver, uint _longAmount, uint _expirationTime) public;
-    function tradeShortForLong(address _receiver, uint _shortAmount, uint _expirationTime) public;
+    function tradeCollatralForShort(address _recipient, uint _longAmount, uint _expirationTime) public;
+    function tradeShortForLong(address _recipient, uint _shortAmount, uint _expirationTime) public;
 
     // This function returns the exact amount of the short token that would be returned for
     // the given amount of the long token.
@@ -30,7 +30,7 @@ contract ILSP_AMMToken is ILongShortPairToken
     event Trade(
         Types.Asset _inAsset,
         Types.Asset _outAsset,
-        address _receiver,
+        address _recipient,
         uint _inAmount,
         uint _outAmount);
 }

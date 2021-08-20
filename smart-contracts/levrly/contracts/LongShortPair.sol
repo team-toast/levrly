@@ -43,13 +43,13 @@ contract ILongShortPairToken
     // can be issued with long, short, or interest tokens
     function issue(
             Types.Asset _assetSupplied, 
-            address _receiver, 
+            address _recipient, 
             uint _amount) 
         public;
     // can redeem to long, short, or interest tokens
     function redeem(
             Types.Asset _assetRequested, 
-            address _receiver, 
+            address _recipient, 
             uint _amount) 
         public;
     // calculates the details of swapping.
@@ -143,22 +143,21 @@ contract ILongShortPairToken
 
     // TODO : extend this to allow for a user supplying debt
     event Issued(
-        address _receiver, 
+        address _issuer,
+        address _recipient, 
         uint _suppliedLong,
         uint _protocolFee,
         uint _automationFee,
-        uint _issuerFee,
         uint _actualLongAdded,
         uint _accreditedLong,
         uint _tokensIssued);
     
     event Redeemed(
         address _redeemer,
-        address _receiver, 
+        address _recipient, 
         uint _tokensRedeemed,
         uint _protocolFee,
         uint _automationFee,
-        uint _issuerFee,
         uint _longRedeemed,
         uint _longReturned);
 
@@ -246,7 +245,7 @@ contract LongShortPairToken is
 
     // issues the LSP by providing the longToken
     function issue( 
-            address _receiver, 
+            address _recipient, 
             uint _amount) 
         public
     {
@@ -261,14 +260,38 @@ contract LongShortPairToken is
         interestToken.transfer(gulper, protocolFee);
 
         emit Issued(
-            _receiver, 
+            msg.sender,
+            _recipient, 
             _amount,
             protocolFee,
             automationFee,
-            protocolFee,
             actualLongAdded,
             accreditedLong,
             tokensIssued);
+    }
+
+    function redeem(
+            address _recipient,
+            uint _amount)
+        public
+    {
+        (uint protocolFee,
+        uint automationFee,
+        uint longRedeemed,
+        uint longReturned) = calculateRedemptionAmount_ForLong(_amount);
+
+        lendingPool.withdraw(address(longToken), longRedeemed, address(this));
+        longToken.transfer(gulper, protocolFee);
+        longToken.transfer(_recipient, longReturned);
+
+        emit Redeemed(
+            msg.sender,
+            _recipient, 
+            _amount,
+            protocolFee,
+            automationFee,
+            longRedeemed,
+            longReturned);
     }
 
     function calculateIssuanceAmount_UsingLong(uint _longAmount)
@@ -297,6 +320,22 @@ contract LongShortPairToken is
             .mul(ONE_HUNDRED_PERC)
             .div(getExcessCollateral())
             .div(ONE_HUNDRED_PERC);
+    }
+
+    function calculateRedemptionAmount_ForLong(uint _amount)
+            public
+        view
+        returns (
+            uint _protocolFee,
+            uint _automationFee,
+            uint _longRedeemed,
+            uint _longReturned)
+    {
+        uint excessCollateral = getExcessCollateral();
+        _protocolFee = excessCollateral.mul(protocolFeePERC).div(ONE_HUNDRED_PERC);
+        _automationFee = excessCollateral.mul(automationFeePERC).div(ONE_HUNDRED_PERC);
+        _longRedeemed = _amount.sub(_protocolFee);
+        _longReturned = _longRedeemed.sub(_automationFee);
     }
 
     function getExcessCollateral()
