@@ -5,7 +5,7 @@ open Nethereum.Web3
 open SolidityProviderNS
 open Infrastructure
 
-type Contracts = SolidityTypes<"./tmp">
+type Contracts = SolidityTypes<"./ABIs">
 
 let lendingPool (ctx: TestContext) = 
     let address = configration.DeployedContractAddresses.LendingPool
