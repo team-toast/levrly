@@ -3,14 +3,17 @@ module Tests
 open Xunit
 open Infrastructure
 open Contracts
+open Domain
 
 [<Fact>]
-let ``LendingPool revision matched`` () = 
+let ``LendingPool ready`` () = 
     withContext 
     <| fun ctx -> 
         let lendingPool = lendingPool ctx
         let revision = lendingPool.LENDINGPOOL_REVISIONQuery()
         Assert.Equal(bigint 3, revision)
+        let isPaused = lendingPool.pausedQuery()
+        Assert.False(isPaused)
 
 [<Fact>]
 let ``DAI total supply non zero`` () = 
@@ -30,21 +33,27 @@ let ``Some huy has DAI`` () =
 
 [<Fact>]
 let ``DAI acquired`` () = 
-    withContextBind
+    withContextAsync
     <| fun ctx -> async {
         let dai = dai ctx
         let dollar n = decimal (10f ** 18f) * n |> bigint
-        let callData = 
-            Contracts.DaiContract.transferFunction(
-                dst = ctx.Connection.Account.Address,
-                wad = dollar 1_000m)
-        let call = 
-            ctx.Connection.MakeImpersonatedCallWithNoEtherAsync "0x40ec5b33f54e0e8a33a975908c5ba1c14e5bbbdf" dai.Address
-        let! _ = call callData
-        
+
+        do! grabDai ctx dai 1_000m
+
         let! balance = dai.balanceOfQueryAsync ctx.Connection.Account.Address |> Async.AwaitTask
         Assert.Equal(balance, dollar 1_000m)
-        ()
     }
 
+[<Fact>]
+let ``DAI deposited`` () =
+    withContextAsync
+    <| fun ctx -> async {
+        let dollar n = decimal (10f ** 18f) * n |> bigint
+        let dai = dai ctx
+        let lendingPool = lendingPool ctx
+        
+        do! grabDai ctx dai 1_000m
+        do! approveLendingPoolOnDai ctx dai 1_000m
 
+        do! depositDai ctx dai lendingPool 1_000m
+    }

@@ -142,7 +142,7 @@ let withContext (f: TestContext -> unit) =
     use ctx = new TestContext()
     f ctx
 
-let withContextBind (f: TestContext -> Async<unit>) = 
+let withContextAsync (f: TestContext -> Async<unit>) = 
     use ctx = new TestContext()
     f ctx |> Async.RunSynchronously
     
