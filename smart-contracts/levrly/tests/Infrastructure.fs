@@ -19,15 +19,24 @@ open Nethereum.RPC
 
 /// Common configuration values.
 let configration = 
-  {|DeployedContractAddresses = 
-      {|LendingPool = "0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9"
+  {|Addresses = 
+      {|AaveLendingPool = "0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9"
+        AaveProtocolDataProvider = "0x057835Ad21a177dbdd3090bB1CAE03EaCF78Fc6d"
+        AavePriceOracle = "0xA50ba011c48153De246E5192C8f9258A2ba79Ca9"
         Dai = "0x6b175474e89094c44da98b954eedeac495271d0f"
-        aDai = "0x028171bCA77440897B824Ca71D1c56caC55b68A3"|}
+        aDai = "0x028171bCA77440897B824Ca71D1c56caC55b68A3"
+        Snx = "0xC011a73ee8576Fb46F5E1c5751cA3B9Fe0af2a6F"|}
+    AavePriceOracleOwnerAddress = "0xee56e2b3d491590b5b31738cc34d5232f378a8d5"
     //TODO: Find a way to get keys from hardhat.
-    AccountPrivateKey = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"|}
+    AccountAddress0 = "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"
+    AccountAddress1 = "0x70997970c51812dc3a010c7d01b50e0d17dc79c8"
+    AccountPrivateKey0 = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+    AccountPrivateKey1 = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"|}
 
 
 let private hexBigInt (n: uint64) = HexBigInteger(BigInteger(n))
+
+let inline await t = Async.AwaitTask t
 
 type private EvmSnapshot(client) = inherit RpcRequestResponseHandlerNoParam<string>(client, "evm_snapshot")
 
@@ -92,6 +101,10 @@ type EthereumConnection(nodeURI: string, privKey: string) =
         this.Web3.Client.SendRequestAsync(RpcRequest(0, "hardhat_impersonateAccount", address)) 
         |> Async.AwaitTask
 
+    member this.StopImpersonatingAccountAsync (address: string) =
+        this.Web3.Client.SendRequestAsync(RpcRequest(0, "hardhat_stopImpersonatingAccount", address)) 
+        |> Async.AwaitTask
+
     member this.MakeImpersonatedCallAsync 
         weiValue 
         gasLimit 
@@ -109,9 +122,12 @@ type EthereumConnection(nodeURI: string, privKey: string) =
             txInput.GasPrice <- gasPrice
             txInput.Value <- weiValue
 
-            return! this.Web3Unsigned.TransactionManager
-                .SendTransactionAndWaitForReceiptAsync(txInput, tokenSource = null)
-                |> Async.AwaitTask
+            let! txr = 
+                this.Web3Unsigned.TransactionManager
+                    .SendTransactionAndWaitForReceiptAsync(txInput, tokenSource = null)
+                    |> Async.AwaitTask
+            do! this.StopImpersonatingAccountAsync addressFrom
+            return txr
         }
        
     member this.MakeImpersonatedCallWithNoEtherAsync addressFrom addressTo (functionArgs:#FunctionMessage) = 
@@ -127,12 +143,16 @@ type EthereumConnection(nodeURI: string, privKey: string) =
         
         HardhatReset(this.Web3.Client).SendRequestAsync input None
 
-type TestContext() =
-    let connection = EthereumConnection("http://127.0.0.1:8545/", configration.AccountPrivateKey)
-    let mutable disposing = false
+type TestContext(privateKey: string) =
+    let connection = EthereumConnection("http://127.0.0.1:8545/", privateKey)
+    
+    new() = new TestContext(configration.AccountPrivateKey0)
+
     member _.Web3 = connection.Web3
 
     member _.Connection = connection
+
+    member _.Address = connection.Account.Address
 
     interface IDisposable with
         member _.Dispose() = 
@@ -146,4 +166,15 @@ let withContext (f: TestContext -> unit) =
 let withContextAsync (f: TestContext -> Async<unit>) = 
     use ctx = new TestContext()
     f ctx |> Async.RunSynchronously
+
+let inNestedContextAsync privateKey (f: TestContext -> Async<'a>) =
+    use ctx = new TestContext(privateKey)
+    f ctx
     
+let inNestedImpersonateContextAsync address (f: TestContext -> Async<'a>) = async {
+    use ctx = new TestContext()
+    do! ctx.Connection.ImpersonateAccountAsync address
+    let! result = f ctx
+    do! ctx.Connection.StopImpersonatingAccountAsync address
+    return result
+}

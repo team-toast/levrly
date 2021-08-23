@@ -39,7 +39,7 @@ let ``DAI acquired`` () =
 
         do! Dai.grabDai ctx dai 1_000m
 
-        let! balance = dai.balanceOfQueryAsync ctx.Connection.Account.Address |> Async.AwaitTask
+        let! balance = await ^  dai.balanceOfQueryAsync ctx.Address
         Assert.Equal(balance, dollar 1_000m)
     }
 
@@ -54,13 +54,29 @@ let ``DAI deposited`` () =
         do! Dai.grabDai ctx dai 1_000m
         do! Dai.approveLendingPoolOnDai ctx dai 1_000m
 
-        do! Aave.depositDai ctx dai lendingPool 1_000m
+        do! Aave.depositDai ctx lendingPool 1_000m
         
-        let! aTokenBalance = aDai.balanceOfQueryAsync(ctx.Connection.Account.Address) |> Async.AwaitTask
+        let! aTokenBalance = await ^ aDai.balanceOfQueryAsync(ctx.Address)
         Assert.Equal(dollar 1_000m, aTokenBalance)
 
-        let! daiBalance = dai.balanceOfQueryAsync(ctx.Connection.Account.Address) |> Async.AwaitTask
-        // This check failed for a strange reason.
-        // Assert.Equal(dollar 0m, aTokenBalance) 
-        ()
+        let! daiBalance = await ^ dai.balanceOfQueryAsync(ctx.Address)
+        Assert.Equal(dollar 0m, daiBalance) 
+    }
+
+[<Fact>]
+let ``SNX borrowed against DAI collaterall`` () =
+    withContextAsync
+    <| fun ctx -> async {
+        let dai = dai ctx
+        let aDai = aDai ctx
+        let snx = snx ctx
+        let lendingPool = lendingPool ctx
+
+        do! Dai.grabDai ctx dai 1_000m
+        do! Dai.approveLendingPoolOnDai ctx dai 1_000m
+        do! Aave.depositDai ctx lendingPool 1_000m
+        do! Aave.borrowSnx ctx lendingPool 500I
+        
+        let! snxBalance = await ^ snx.balanceOfQueryAsync(ctx.Address)
+        Assert.Equal(500I, snxBalance)
     }

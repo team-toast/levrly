@@ -11,14 +11,14 @@ let dollar n = decimal (10f ** 18f) * n |> bigint
 
 module Dai =
 
-    let checkDaiBalance (ctx: TestContext) (dai: Contracts.DaiContract) = async {
+    let checkDaiBalance (ctx: TestContext) (dai: DAI) = async {
         return! dai.balanceOfQueryAsync ctx.Connection.Account.Address |> Async.AwaitTask
     }
 
-    let grabDai (ctx: TestContext) (dai: Contracts.DaiContract) amount = async {
+    let grabDai (ctx: TestContext) (dai: DAI) amount = async {
         let dollar amount = decimal (10f ** 18f) * amount |> bigint
         let callData = 
-            Contracts.DaiContract.transferFunction(
+            DAI.transferFunction(
                 dst = ctx.Connection.Account.Address,
                 wad = dollar amount)
         let call = 
@@ -28,42 +28,66 @@ module Dai =
         if txr.Status <> ~~~ 1UL then
             failwith "Transaction not succeed"
         
-        let events = decodeEvents<Contracts.DaiContract.TransferEventDTO>(txr)
+        let events = decodeEvents<DAI.TransferEventDTO>(txr)
         if events.Count = 0 then
             failwith "No Trnasfer event in transaction"
     }
 
-    let approveLendingPoolOnDai (ctx: TestContext) (dai: Contracts.DaiContract) amount = async {
+    let approveLendingPoolOnDai (ctx: TestContext) (dai: DAI) amount = async {
         let dollar amount = decimal (10f ** 18f) * amount |> bigint
-        let! txr = dai.approveAsync(configration.DeployedContractAddresses.LendingPool, dollar amount)
+        let! txr = dai.approveAsync(configration.Addresses.AaveLendingPool, dollar amount)
                    |> Async.AwaitTask
         if txr.Status <> ~~~ 1UL then
             failwith "Transaction not succeed"
         
-        let events = decodeEvents<Contracts.DaiContract.ApprovalEventDTO>(txr)
+        let events = decodeEvents<DAI.ApprovalEventDTO>(txr)
         if events.Count = 0 then
             failwith "No Trnasfer event in transaction"
     }
 
 module Aave =
+    let interestRateMode = {| Stable = bigint 1; Variable = bigint 2 |}
 
-    let depositDai (ctx: TestContext) (dai: Contracts.DaiContract) (lendingPool: Contracts.LendingPoolContract) amount = async {
-        do! Dai.grabDai ctx dai amount
-        do! Dai.approveLendingPoolOnDai ctx dai amount
-
-        let! txr = lendingPool.depositAsync(configration.DeployedContractAddresses.Dai,
+    let depositDai (ctx: TestContext) (lendingPool: LendingPool) amount = async {
+        let! txr = lendingPool.depositAsync(configration.Addresses.Dai,
                                             dollar amount, 
                                             ctx.Connection.Account.Address, 
                                             uint16 0) |> Async.AwaitTask
         if txr.Status <> ~~~ 1UL then
             failwith "Transaction not succeed"
         let event = 
-            decodeEvents<Contracts.LendingPoolContract.DepositEventDTO>(txr)
+            decodeEvents<LendingPool.DepositEventDTO>(txr)
             |> Seq.find (fun e -> e.Event.user = ctx.Connection.Account.Address)
             |> fun e -> e.Event
 
         if event.amount <> dollar amount 
-        || event.user <> ctx.Connection.Account.Address  // 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
+        || event.user <> ctx.Address  // 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
         || event.reserve <> "0x6B175474E89094C44Da98b954EedeAC495271d0F" then
             failwith "Invalid data in deposit event"
+    }
+
+    let borrowSnx (ctx: TestContext) (lendingPool: LendingPool) amount = async {        
+        let! txr = lendingPool.borrowAsync(configration.Addresses.Snx, amount, interestRateMode.Variable, 0us, ctx.Address) |> Async.AwaitTask
+        if txr.Status <> ~~~ 1UL then
+            failwith "Transaction not succeed"
+        let event = 
+            decodeEvents<LendingPool.BorrowEventDTO>(txr)
+            |> Seq.find (fun e -> e.Event.user = ctx.Connection.Account.Address)
+            |> fun e -> e.Event
+        if event.user <> ctx.Address || event.amount <> amount then
+            failwith "Invalid data in deposit event"
+    }
+
+    let UseReserveAsCollateral 
+        (ctx: TestContext) 
+        (lendingPool: LendingPool) 
+        (assetAddress: string) = async {
+        return! lendingPool.setUserUseReserveAsCollateralAsync(assetAddress, true) |> Async.AwaitTask
+    }
+
+    let NotUseReserveAsCollateral 
+        (ctx: TestContext) 
+        (lendingPool: LendingPool) 
+        (assetAddress: string) = async {
+        return! lendingPool.setUserUseReserveAsCollateralAsync(assetAddress, false) |> Async.AwaitTask
     }
