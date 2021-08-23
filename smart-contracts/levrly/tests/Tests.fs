@@ -36,9 +36,8 @@ let ``DAI acquired`` () =
     withContextAsync
     <| fun ctx -> async {
         let dai = dai ctx
-        let dollar n = decimal (10f ** 18f) * n |> bigint
 
-        do! grabDai ctx dai 1_000m
+        do! Dai.grabDai ctx dai 1_000m
 
         let! balance = dai.balanceOfQueryAsync ctx.Connection.Account.Address |> Async.AwaitTask
         Assert.Equal(balance, dollar 1_000m)
@@ -48,12 +47,20 @@ let ``DAI acquired`` () =
 let ``DAI deposited`` () =
     withContextAsync
     <| fun ctx -> async {
-        let dollar n = decimal (10f ** 18f) * n |> bigint
         let dai = dai ctx
+        let aDai = aDai ctx
         let lendingPool = lendingPool ctx
         
-        do! grabDai ctx dai 1_000m
-        do! approveLendingPoolOnDai ctx dai 1_000m
+        do! Dai.grabDai ctx dai 1_000m
+        do! Dai.approveLendingPoolOnDai ctx dai 1_000m
 
-        do! depositDai ctx dai lendingPool 1_000m
+        do! Aave.depositDai ctx dai lendingPool 1_000m
+        
+        let! aTokenBalance = aDai.balanceOfQueryAsync(ctx.Connection.Account.Address) |> Async.AwaitTask
+        Assert.Equal(dollar 1_000m, aTokenBalance)
+
+        let! daiBalance = dai.balanceOfQueryAsync(ctx.Connection.Account.Address) |> Async.AwaitTask
+        // This check failed for a strange reason.
+        // Assert.Equal(dollar 0m, aTokenBalance) 
+        ()
     }

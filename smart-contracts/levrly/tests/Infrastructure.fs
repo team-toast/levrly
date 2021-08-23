@@ -21,7 +21,8 @@ open Nethereum.RPC
 let configration = 
   {|DeployedContractAddresses = 
       {|LendingPool = "0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9"
-        Dai = "0x6b175474e89094c44da98b954eedeac495271d0f"|}
+        Dai = "0x6b175474e89094c44da98b954eedeac495271d0f"
+        aDai = "0x028171bCA77440897B824Ca71D1c56caC55b68A3"|}
     //TODO: Find a way to get keys from hardhat.
     AccountPrivateKey = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"|}
 
