@@ -36,40 +36,39 @@ contract ILongShortPairToken
 {
     using SafeMath for uint;
 
-    // TODO: mve this to state
+    // TODO: move this to state
     ILendingPool public lendingPool;
     IPriceOracleGetter public priceOracle;
 
     // can be issued with long, short, or interest tokens
-    function issue(
-            Types.Asset _assetSupplied, 
+    function issue( 
             address _recipient, 
             uint _amount) 
         public;
     // can redeem to long, short, or interest tokens
     function redeem(
-            Types.Asset _assetRequested, 
             address _recipient, 
             uint _amount) 
         public;
-    // calculates the details of swapping.
-    function swap(
-            Types.Asset _providedAsset,     // what we're giving
-            Types.Asset _requestedAsset,    // what we're expecting
-            uint _amountProvided,           // how much msg.sender is giving
-            uint _minAmountRequested,       // minimum amount msg.sender is expecting
-            uint _expiryTime)               // how long the swap is good for
-        public;
 
-    function calculateSwapBreakDown(
-            Types.Asset _providedAsset, 
-            Types.Asset _requestedAsset,
-            uint _amountProvided) 
-        public 
-        returns (
-            uint _, 
-            uint _shortAmount, 
-            uint _interestAmount);
+    // calculates the details of swapping.
+    // function swap(
+    //         Types.Asset _providedAsset,     // what we're giving
+    //         Types.Asset _requestedAsset,    // what we're expecting
+    //         uint _amountProvided,           // how much msg.sender is giving
+    //         uint _minAmountRequested,       // minimum amount msg.sender is expecting
+    //         uint _expiryTime)               // how long the swap is good for
+    //     public;
+
+    // function calculateSwapBreakDown(
+    //         Types.Asset _providedAsset, 
+    //         Types.Asset _requestedAsset,
+    //         uint _amountProvided) 
+    //     public 
+    //     returns (
+    //         uint _, 
+    //         uint _shortAmount, 
+    //         uint _interestAmount);
 
     // msg.sender probives all the excessive bedt in short tokens in return for long tokens 
     // + a fee for the debt below the lower bound
@@ -78,11 +77,6 @@ contract ILongShortPairToken
     // + a fee for the collateral above the upper bound
     function leverAllExcessiveCollateral() public;
 
-    // price of the long token as a WAD decimal, denominated in the short token
-    function priceOfLongInShortWAD() public view returns (uint);
-    // price of the short token as a WAD decimal, denominated in the long token
-    function priceOfShortInLongWAD() public view returns (uint);
-
     function changeSettings(
             uint _redemptionRatioLimit, 
             uint _lowerRatio, 
@@ -90,18 +84,6 @@ contract ILongShortPairToken
             uint _upperRatio,
             uint _automationFee) 
         public;
-
-    function getRatio() public view returns (uint _ratio);
-    function getInfo() 
-        public 
-        view 
-        returns (
-            uint _longPrice, 
-            uint _longAmount, 
-            uint _shortPrice, 
-            uint _shortAmount,
-            uint _longBalanceDenomenatedInShort,
-            uint _excessLong);
     
     function calculateIssuanceAmount_UsingLong(uint _longAmount) 
         public
@@ -343,27 +325,125 @@ contract LongShortPairToken is
         view
         returns (uint _excessCollateral)
     {
-        (,,,,_excessCollateral) = getCollateral();
+        (,,,,_excessCollateral,,) = getInfo();
     }
 
-    function getCollateral()
+    function getInfo()
         public
         view
         returns (
             uint _collateralPriceWEI,
             uint _collateralBalance,
+            uint _collateralValueWEI,
+
             uint _debtPriceWEI,
             uint _debtBalance,
-            uint _excessCollateral)
+            uint _debtValueWEI,
+
+            int _collateralValueAboveUpperRatioWEI,
+            int _debtValueBelowLowerRatioWEI,
+
+            uint _excessCollateral,
+            uint _actualRatioPERC,
+            uint _actualLeveragePERC,
+            uint _shortReward,
+            uint _longReward)
     {
         _collateralPriceWEI = priceOracle.getAssetPrice(address(longToken));
         _collateralBalance = longToken.balanceOf(address(this));
+        _collateralValueWEI = _collateralPriceWEI.mul(_collateralBalance);
+         
         _debtPriceWEI = priceOracle.getAssetPrice(address(shortToken));
         _debtBalance = shortToken.balanceOf(address(this));
+        _debtValueWEI = _debtPriceWEI.mul(_debtBalance);
 
-        uint collateralValue = _collateralBalance.mul(_collateralPriceWEI);
-        uint debtValue = _debtBalance.mul(_debtPriceWEI);
-        _excessCollateral = collateralValue.sub(debtValue).div(_collateralPriceWEI);
+        _collateralValueAboveUpperRatioWEI = collateralValueChangeWEI(_collateralValueWEI, _debtValueWEI, upperRatioPERC);
+        _debtValueBelowLowerRatioWEI = debtValueChangeWEI(_collateralValueWEI, _debtValueWEI, lowerRatioPERC);
+        int collateralValueAboveTarget = collateralValueChangeWEI(_collateralValueWEI, _debtValueWEI, targetRatioPERC);
+
+        _excessCollateral = _collateralValueWEI.sub(_debtValueWEI).div(_collateralPriceWEI);
+        _actualRatioPERC = _collateralValueWEI.mul(ONE_HUNDRED_PERC).div(_debtValueWEI);
+        _actualLeveragePERC = leveragePERC(_actualRatioPERC);
+    }
+
+    // For a given collateral, debt and ratio, how much collateral needs to be added or removed to achieve that ratio?
+    function collateralValueChangeWEI(uint _collateralValueWEI, uint _debtValueWEI, uint _ratioPERC)
+        public
+        pure
+        returns (int)
+    {
+        return _collateralValueWEI
+            .sub(_debtValueWEI)
+            .mul(leveragePERC(_ratioPERC)).div(ONE_HUNDRED_PERC)
+            - _collateralValueWEI;
+    }
+
+    // For a given collateral, debt and ratio, how much debt needs to be added or removed to achieve that ratio?
+    function debtValueChangeWEI(uint _collateralValueWEI, uint _debtValueWEI, uint _ratioPERC)
+        public
+        pure
+        returns (int)
+    {
+        return -1 * collateralValueChangeWEI(_collateralValueWEI, _debtValueWEI, _ratioPERC);
+    }
+
+    function leveragePERC(uint _ratioPERC)
+        public
+        pure
+        returns(uint)
+    {
+        //       1
+        // ------------  + 1 = leverage
+        //  _ratio - 1
+        return ONE_HUNDRED_PERC.mul(ONE_HUNDRED_PERC)
+            .div(_ratioPERC.sub(ONE_HUNDRED_PERC))
+            .add(ONE_HUNDRED_PERC);
+    }
+
+    function delever()
+        public
+    {
+        (uint shortAmountRequired, uint longAmountReturned, uint impliedFee) = calculateReleverage(); 
+        shortToken.transferFrom(msg.sender, address(this), shortAmountRequired);
+        lendingPool.repay(address(shortToken), shortAmountRequired, 0, address(this));
+        shortToken.transfer(msg.sender, longAmountReturned);
+
+        emit delevered(
+            msg.sender,
+            longAmountRequired,
+            shortAmountReturned,
+            impliedFee);
+    }
+
+    event relevered(
+        address _sender, 
+        uint _longAmountRequired, 
+        uint _shortAmountReturned,
+        uint _impliedFee);
+
+    function relever()
+        public
+    {
+        (uint longAmountRequired, uint shortAmountReturned, uint impliedFee) = calculateReleverage(); 
+        longToken.transferFrom(msg.sender, address(this), longAmountRequired);
+        lendingPool.deposit(address(longToken), longAmountRequired, address(this), 0);
+        lendingPool.borrow(address(), shortAmountReturned, 0, 0, msg.sender);
+
+        emit relevered(
+            msg.sender,
+            longAmountRequired,
+            shortAmountReturned,
+            impliedFee);
+    }
+
+    function calculateShortReward()
+        public
+        returns (
+            uint _collateralToSupply, 
+            uint _shortReturned,
+            uint _shortProfitAboveOraclePrice)
+    {
+        
     }
 }
 

@@ -17,8 +17,8 @@ contract Types
 
 contract LongShortPairState 
 {
-    uint constant public ONE_PERC = 10 ** 16;
-    uint constant public ONE_HUNDRED_PERC = 10 ** 18;
+    uint constant ONE_PERC = 10 ** 16;
+    uint constant ONE_HUNDRED_PERC = 10 ** 18;
 
     IERC20 public longToken;
     IERC20 public interestToken; // the AAVE interest token to which interest accrues
