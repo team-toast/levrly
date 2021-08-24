@@ -1,4 +1,5 @@
 require("@nomiclabs/hardhat-waffle");
+require("@tenderly/hardhat-tenderly");
 
 // This is a sample Hardhat task. To learn how to create your own go to
 // https://hardhat.org/guides/create-task.html
@@ -17,6 +18,10 @@ task("accounts", "Prints the list of accounts", async () => {
  * @type import('hardhat/config').HardhatUserConfig
  */
 module.exports = {
+  tenderly: {
+    project: "https://dashboard.tenderly.co/mprokazin/levrly-local",
+    username: "michael.prokazin@redduck.io"
+  },
   solidity: "0.5.17",
   networks: {
     hardhat: {
