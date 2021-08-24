@@ -424,7 +424,7 @@ contract LongShortPairToken is
     function relever()
         public
     {
-        (uint longAmountRequired, uint shortAmountReturned, uint impliedFee) = calculateReleverage(); 
+        (uint longAmountRequired, uint shortAmountReturned, uint impliedFeeInLong) = calculateReleverage(); 
         longToken.transferFrom(msg.sender, address(this), longAmountRequired);
         lendingPool.deposit(address(longToken), longAmountRequired, address(this), 0);
         lendingPool.borrow(address(), shortAmountReturned, 0, 0, msg.sender);
@@ -433,7 +433,31 @@ contract LongShortPairToken is
             msg.sender,
             longAmountRequired,
             shortAmountReturned,
-            impliedFee);
+            impliedFeeInLong);
+    }
+
+    function helpRelever(LongShortPair _LSP, uint longPriceInShort)
+        public
+    {
+        (longAmount, shortAmount,) = LSP.calculateReleverage();
+        // is this worth it?
+        uint price = Uniswap.price(LSP.longToken, LSP.shortToken);
+        require(price < (longAmount/shortAmount) + profitIWant, "nah bra{h/v}");
+
+        AAVE.flashLoan(LSP.longToken, longAmount);
+        LSP.longToken.Approve(LSP, longAmount);
+        LSP.relever();
+        // now we have the shortTokens
+
+        Uniswap.Trade(LSP.shortToken, LSP.shortToken.balanceOf(address(this)), LSP.long, /* some calculation on min long amount returned */ 0);
+        // now we should have more longTokens than we borrowed!
+
+        // if we don't have enough profit, well screw you guys too!
+        // maybe ^ is entirely perfunctory
+
+        AAVE.flashLoanRepay(LSP.longToken, longAmount + interest);
+        // cool, now we should have more money than the transaction cost us!
+
     }
 
     function calculateShortReward()
