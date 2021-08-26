@@ -4,24 +4,9 @@
         {
             "inputs": [
                 {
-                    "internalType": "address[]",
-                    "name": "assets",
-                    "type": "address[]"
-                },
-                {
-                    "internalType": "address[]",
-                    "name": "sources",
-                    "type": "address[]"
-                },
-                {
-                    "internalType": "address",
-                    "name": "fallbackOracle",
-                    "type": "address"
-                },
-                {
-                    "internalType": "address",
-                    "name": "weth",
-                    "type": "address"
+                    "internalType": "string",
+                    "name": "marketId",
+                    "type": "string"
                 }
             ],
             "stateMutability": "nonpayable",
@@ -31,19 +16,25 @@
             "anonymous": false,
             "inputs": [
                 {
-                    "indexed": true,
-                    "internalType": "address",
-                    "name": "asset",
-                    "type": "address"
+                    "indexed": false,
+                    "internalType": "bytes32",
+                    "name": "id",
+                    "type": "bytes32"
                 },
                 {
                     "indexed": true,
                     "internalType": "address",
-                    "name": "source",
+                    "name": "newAddress",
                     "type": "address"
+                },
+                {
+                    "indexed": false,
+                    "internalType": "bool",
+                    "name": "hasProxy",
+                    "type": "bool"
                 }
             ],
-            "name": "AssetSourceUpdated",
+            "name": "AddressSet",
             "type": "event"
         },
         {
@@ -52,11 +43,89 @@
                 {
                     "indexed": true,
                     "internalType": "address",
-                    "name": "fallbackOracle",
+                    "name": "newAddress",
                     "type": "address"
                 }
             ],
-            "name": "FallbackOracleUpdated",
+            "name": "ConfigurationAdminUpdated",
+            "type": "event"
+        },
+        {
+            "anonymous": false,
+            "inputs": [
+                {
+                    "indexed": true,
+                    "internalType": "address",
+                    "name": "newAddress",
+                    "type": "address"
+                }
+            ],
+            "name": "EmergencyAdminUpdated",
+            "type": "event"
+        },
+        {
+            "anonymous": false,
+            "inputs": [
+                {
+                    "indexed": true,
+                    "internalType": "address",
+                    "name": "newAddress",
+                    "type": "address"
+                }
+            ],
+            "name": "LendingPoolCollateralManagerUpdated",
+            "type": "event"
+        },
+        {
+            "anonymous": false,
+            "inputs": [
+                {
+                    "indexed": true,
+                    "internalType": "address",
+                    "name": "newAddress",
+                    "type": "address"
+                }
+            ],
+            "name": "LendingPoolConfiguratorUpdated",
+            "type": "event"
+        },
+        {
+            "anonymous": false,
+            "inputs": [
+                {
+                    "indexed": true,
+                    "internalType": "address",
+                    "name": "newAddress",
+                    "type": "address"
+                }
+            ],
+            "name": "LendingPoolUpdated",
+            "type": "event"
+        },
+        {
+            "anonymous": false,
+            "inputs": [
+                {
+                    "indexed": true,
+                    "internalType": "address",
+                    "name": "newAddress",
+                    "type": "address"
+                }
+            ],
+            "name": "LendingRateOracleUpdated",
+            "type": "event"
+        },
+        {
+            "anonymous": false,
+            "inputs": [
+                {
+                    "indexed": false,
+                    "internalType": "string",
+                    "name": "newMarketId",
+                    "type": "string"
+                }
+            ],
+            "name": "MarketIdSet",
             "type": "event"
         },
         {
@@ -84,59 +153,46 @@
                 {
                     "indexed": true,
                     "internalType": "address",
-                    "name": "weth",
+                    "name": "newAddress",
                     "type": "address"
                 }
             ],
-            "name": "WethSet",
+            "name": "PriceOracleUpdated",
             "type": "event"
         },
         {
-            "inputs": [],
-            "name": "WETH",
+            "anonymous": false,
+            "inputs": [
+                {
+                    "indexed": false,
+                    "internalType": "bytes32",
+                    "name": "id",
+                    "type": "bytes32"
+                },
+                {
+                    "indexed": true,
+                    "internalType": "address",
+                    "name": "newAddress",
+                    "type": "address"
+                }
+            ],
+            "name": "ProxyCreated",
+            "type": "event"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "bytes32",
+                    "name": "id",
+                    "type": "bytes32"
+                }
+            ],
+            "name": "getAddress",
             "outputs": [
                 {
                     "internalType": "address",
                     "name": "",
                     "type": "address"
-                }
-            ],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
-            "inputs": [
-                {
-                    "internalType": "address",
-                    "name": "asset",
-                    "type": "address"
-                }
-            ],
-            "name": "getAssetPrice",
-            "outputs": [
-                {
-                    "internalType": "uint256",
-                    "name": "",
-                    "type": "uint256"
-                }
-            ],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
-            "inputs": [
-                {
-                    "internalType": "address[]",
-                    "name": "assets",
-                    "type": "address[]"
-                }
-            ],
-            "name": "getAssetsPrices",
-            "outputs": [
-                {
-                    "internalType": "uint256[]",
-                    "name": "",
-                    "type": "uint256[]"
                 }
             ],
             "stateMutability": "view",
@@ -144,7 +200,7 @@
         },
         {
             "inputs": [],
-            "name": "getFallbackOracle",
+            "name": "getEmergencyAdmin",
             "outputs": [
                 {
                     "internalType": "address",
@@ -156,14 +212,86 @@
             "type": "function"
         },
         {
-            "inputs": [
+            "inputs": [],
+            "name": "getLendingPool",
+            "outputs": [
                 {
                     "internalType": "address",
-                    "name": "asset",
+                    "name": "",
                     "type": "address"
                 }
             ],
-            "name": "getSourceOfAsset",
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [],
+            "name": "getLendingPoolCollateralManager",
+            "outputs": [
+                {
+                    "internalType": "address",
+                    "name": "",
+                    "type": "address"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [],
+            "name": "getLendingPoolConfigurator",
+            "outputs": [
+                {
+                    "internalType": "address",
+                    "name": "",
+                    "type": "address"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [],
+            "name": "getLendingRateOracle",
+            "outputs": [
+                {
+                    "internalType": "address",
+                    "name": "",
+                    "type": "address"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [],
+            "name": "getMarketId",
+            "outputs": [
+                {
+                    "internalType": "string",
+                    "name": "",
+                    "type": "string"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [],
+            "name": "getPoolAdmin",
+            "outputs": [
+                {
+                    "internalType": "address",
+                    "name": "",
+                    "type": "address"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [],
+            "name": "getPriceOracle",
             "outputs": [
                 {
                     "internalType": "address",
@@ -197,17 +325,35 @@
         {
             "inputs": [
                 {
-                    "internalType": "address[]",
-                    "name": "assets",
-                    "type": "address[]"
+                    "internalType": "bytes32",
+                    "name": "id",
+                    "type": "bytes32"
                 },
                 {
-                    "internalType": "address[]",
-                    "name": "sources",
-                    "type": "address[]"
+                    "internalType": "address",
+                    "name": "newAddress",
+                    "type": "address"
                 }
             ],
-            "name": "setAssetSources",
+            "name": "setAddress",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "bytes32",
+                    "name": "id",
+                    "type": "bytes32"
+                },
+                {
+                    "internalType": "address",
+                    "name": "implementationAddress",
+                    "type": "address"
+                }
+            ],
+            "name": "setAddressAsProxy",
             "outputs": [],
             "stateMutability": "nonpayable",
             "type": "function"
@@ -216,11 +362,102 @@
             "inputs": [
                 {
                     "internalType": "address",
-                    "name": "fallbackOracle",
+                    "name": "emergencyAdmin",
                     "type": "address"
                 }
             ],
-            "name": "setFallbackOracle",
+            "name": "setEmergencyAdmin",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "address",
+                    "name": "manager",
+                    "type": "address"
+                }
+            ],
+            "name": "setLendingPoolCollateralManager",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "address",
+                    "name": "configurator",
+                    "type": "address"
+                }
+            ],
+            "name": "setLendingPoolConfiguratorImpl",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "address",
+                    "name": "pool",
+                    "type": "address"
+                }
+            ],
+            "name": "setLendingPoolImpl",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "address",
+                    "name": "lendingRateOracle",
+                    "type": "address"
+                }
+            ],
+            "name": "setLendingRateOracle",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "string",
+                    "name": "marketId",
+                    "type": "string"
+                }
+            ],
+            "name": "setMarketId",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "address",
+                    "name": "admin",
+                    "type": "address"
+                }
+            ],
+            "name": "setPoolAdmin",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "address",
+                    "name": "priceOracle",
+                    "type": "address"
+                }
+            ],
+            "name": "setPriceOracle",
             "outputs": [],
             "stateMutability": "nonpayable",
             "type": "function"

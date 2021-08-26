@@ -6,6 +6,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Operators.fs" />
+    <Compile Include="ContractDeployment.fs" />
     <Compile Include="Infrastructure.fs" />
     <Compile Include="Contracts.fs" />
     <Compile Include="Domain.fs" />

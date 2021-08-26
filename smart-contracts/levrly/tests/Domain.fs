@@ -78,16 +78,54 @@ module Aave =
             failwith "Invalid data in deposit event"
     }
 
-    let UseReserveAsCollateral 
+    let useReserveAsCollateral 
         (ctx: TestContext) 
         (lendingPool: LendingPool) 
         (assetAddress: string) = async {
         return! lendingPool.setUserUseReserveAsCollateralAsync(assetAddress, true) |> Async.AwaitTask
     }
 
-    let NotUseReserveAsCollateral 
+    let notUseReserveAsCollateral 
         (ctx: TestContext) 
         (lendingPool: LendingPool) 
         (assetAddress: string) = async {
         return! lendingPool.setUserUseReserveAsCollateralAsync(assetAddress, false) |> Async.AwaitTask
     }
+
+    let setAssetPrice 
+        (ctx: TestContext)
+        (priceOracle: MockPriceOracle)
+        (assetAddress: string)
+        (price: bigint) = async {
+        let dollar amount = decimal (10f ** 18f) * amount |> bigint
+        let callData = 
+            MockPriceOracle.setAssetPriceFunction(
+                _asset = assetAddress,
+                _price = price)
+        let call = 
+            ctx.Connection.MakeImpersonatedCallWithNoEtherAsync configration.AavePriceOracleOwnerAddress priceOracle.Address
+        let! txr = call callData
+        
+        if txr.Status <> ~~~ 1UL then
+            failwith "Transaction not succeed"
+        }
+
+    let setPriceOracle
+        (ctx: TestContext)
+        (lpAddressProvider: LendingPoolAddressesProvider)
+        (priceOracleAddress: string) = async {
+            let actualOwnerAddress = "0xee56e2b3d491590b5b31738cc34d5232f378a8d5"
+            let callData = LendingPoolAddressesProvider.setPriceOracleFunction(priceOracle = priceOracleAddress)
+            let call = 
+                ctx.Connection.MakeImpersonatedCallWithNoEtherAsync actualOwnerAddress lpAddressProvider.Address
+            let! txr = call callData
+
+            let event = 
+                txr
+                |> decodeEvents<LendingPoolAddressesProvider.PriceOracleUpdatedEventDTO> 
+                |> Seq.exactlyOne
+                |> fun e -> e.Event
+            
+            if event.newAddress.ToLowerInvariant() <> priceOracleAddress then
+                failwith "Price oracle not changed after transaction."
+        }

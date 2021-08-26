@@ -80,3 +80,29 @@ let ``SNX borrowed against DAI collaterall`` () =
         let! snxBalance = await ^ snx.balanceOfQueryAsync(ctx.Address)
         Assert.Equal(500I, snxBalance)
     }
+
+[<Fact>]
+let ``DAI price changed`` () =
+    withContextAsync
+    <| fun ctx -> async {
+        let lpAddressProvider = lendingPoolAddressProvider ctx
+        let! oldPriceOracleAddress = await ^ lpAddressProvider.getPriceOracleQueryAsync()
+
+        let! priceOracle = deployContract ctx (mockPriceOracleAt ctx) [ oldPriceOracleAddress ]
+        let! daiPrice = await ^ priceOracle.getAssetPriceQueryAsync(configration.Addresses.Dai)
+        Assert.Equal(371400000000000I, daiPrice)
+        
+        do! Aave.setPriceOracle ctx lpAddressProvider priceOracle.Address
+        let! txr = await ^ priceOracle.setAssetPriceAsync(configration.Addresses.Dai, 471400000000000I)
+        
+        let! daiPrice = await ^ priceOracle.getAssetPriceQueryAsync(configration.Addresses.Dai)
+        Assert.Equal(471400000000000I, daiPrice)
+    }
+
+[<Fact>]
+let ``Own contract deployed`` () =
+    withContextAsync
+    <| fun ctx -> async {
+        let _ = deployContract ctx (mockPriceOracleAt ctx) []
+        ()
+    }

@@ -16,6 +16,7 @@ open Nethereum.Web3
 open Nethereum.Web3.Accounts
 open Nethereum.RPC.Eth.DTOs
 open Nethereum.RPC
+open ContractDeployment
 
 /// Common configuration values.
 let configration = 
@@ -35,8 +36,6 @@ let configration =
 
 
 let private hexBigInt (n: uint64) = HexBigInteger(BigInteger(n))
-
-let inline await t = Async.AwaitTask t
 
 type private EvmSnapshot(client) = inherit RpcRequestResponseHandlerNoParam<string>(client, "evm_snapshot")
 
@@ -143,10 +142,27 @@ type EthereumConnection(nodeURI: string, privKey: string) =
         
         HardhatReset(this.Web3.Client).SendRequestAsync input None
 
+    member this.DeployContract (abi: Abi) (constructorParams: list<#obj>) =
+        let constructorParams = 
+            constructorParams 
+            |> List.map (fun x -> x :> obj)
+            |> Array.ofList 
+        this.Web3.Eth.DeployContract.SendRequestAndWaitForReceiptAsync(
+            abi.AbiString,
+            abi.BytecodeString,
+            from = this.Account.Address,
+            gas = this.Gas,
+            gasPrice = this.GasPrice,
+            value = ~~~ 0UL,
+            receiptRequestCancellationToken = null,
+            values = constructorParams)
+
 type TestContext(privateKey: string) =
     let connection = EthereumConnection("http://127.0.0.1:8545/", privateKey)
     
+    do connection.HardhatResetAsync.Wait()
     new() = new TestContext(configration.AccountPrivateKey0)
+
 
     member _.Web3 = connection.Web3
 
@@ -157,7 +173,7 @@ type TestContext(privateKey: string) =
     interface IDisposable with
         member _.Dispose() = 
             // TODO: Find effective way to call HRE 'hardhat_reset'.
-            connection.HardhatResetAsync.Wait()
+            ()
 
 let withContext (f: TestContext -> unit) = 
     use ctx = new TestContext()
@@ -178,3 +194,18 @@ let inNestedImpersonateContextAsync address (f: TestContext -> Async<'a>) = asyn
     do! ctx.Connection.StopImpersonatingAccountAsync address
     return result
 }
+
+let inline deployContract< ^contract when ^contract: (static member FromFile: string with get) >
+    (ctx: TestContext)
+    (create: string -> ^contract)
+    (contructorParams: obj list) = 
+    async {
+        let abiPath = (^contract: (static member FromFile: string with get) ())
+        let! abi = Abi.ParseFromFile abiPath
+        let! txr = await ^ ctx.Connection.DeployContract abi contructorParams
+        let address = txr.ContractAddress
+        if not ^ txr.Failed() then
+            return create address
+        else
+            return (failwith "Transaction failed(")
+    }

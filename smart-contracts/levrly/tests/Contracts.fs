@@ -13,7 +13,7 @@ type ProtocolDataProvider = Contracts.ProtocolDataProviderContract
 type LendingPoolAddressesProvider = Contracts.LendingPoolAddressesProviderContract
 type ERC20 = Contracts.ERC20Contract
 type DAI = Contracts.DaiContract
-type PriceOracle = Contracts.IPriceOracleContract
+type MockPriceOracle = Contracts.MockPriceOracleContract
 
 let lendingPool (ctx: TestContext) = 
     let address = configration.Addresses.AaveLendingPool
@@ -35,10 +35,11 @@ let snx (ctx: TestContext) =
     let address = configration.Addresses.Snx
     ERC20(address, ctx.Web3)
 
-let priceOracle (ctx: TestContext) =
-    let address = configration.Addresses.AavePriceOracle
-    PriceOracle(address, ctx.Web3)
-
+let mockPriceOracleAt (ctx: TestContext) (address: string) =
+    MockPriceOracle(address, ctx.Web3)
 let lendingPoolAddressProvider (ctx: TestContext) = 
     let address = "0xB53C1a33016B2DC2fF3653530bfF1848a515c8c5"
+    LendingPoolAddressesProvider(address, ctx.Web3)
+
+let lendingPoolAddressProviderAt (ctx: TestContext) (address: string) = 
     LendingPoolAddressesProvider(address, ctx.Web3)
