@@ -2,6 +2,7 @@
 // add disclaimer
 
 pragma solidity ^0.5.17;
+pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20Detailed.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
@@ -328,8 +329,26 @@ contract LongShortPairToken is
         (,,,,_excessCollateral,,) = getInfo();
     }
 
+    struct collateralInfo
+    {
+        uint collateralPriceWEI;
+        uint collateralBalance;
+        uint collateralValueWEI;
+
+        uint debtPriceWEI;
+        uint debtBalance;
+        uint debtValueWEI;
+
+        int collateralValueAboveUpperRatioWEI;
+        int debtValueBelowLowerRatioWEI;
+
+        uint excessCollateral;
+        uint actualRatioPERC;
+        uint actualLeveragePERC;
+    }
+
     function getInfo()
-        public
+        internal
         view
         returns (
             uint _collateralPriceWEI,
@@ -345,25 +364,31 @@ contract LongShortPairToken is
 
             uint _excessCollateral,
             uint _actualRatioPERC,
-            uint _actualLeveragePERC,
-            uint _shortReward,
-            uint _longReward)
+            uint _actualLeveragePERC)
     {
-        _collateralPriceWEI = priceOracle.getAssetPrice(address(longToken));
-        _collateralBalance = longToken.balanceOf(address(this));
-        _collateralValueWEI = _collateralPriceWEI.mul(_collateralBalance);
-         
-        _debtPriceWEI = priceOracle.getAssetPrice(address(shortToken));
-        _debtBalance = shortToken.balanceOf(address(this));
-        _debtValueWEI = _debtPriceWEI.mul(_debtBalance);
 
-        _collateralValueAboveUpperRatioWEI = collateralValueChangeWEI(_collateralValueWEI, _debtValueWEI, upperRatioPERC);
-        _debtValueBelowLowerRatioWEI = debtValueChangeWEI(_collateralValueWEI, _debtValueWEI, lowerRatioPERC);
-        int collateralValueAboveTarget = collateralValueChangeWEI(_collateralValueWEI, _debtValueWEI, targetRatioPERC);
+    }
 
-        _excessCollateral = _collateralValueWEI.sub(_debtValueWEI).div(_collateralPriceWEI);
-        _actualRatioPERC = _collateralValueWEI.mul(ONE_HUNDRED_PERC).div(_debtValueWEI);
-        _actualLeveragePERC = leveragePERC(_actualRatioPERC);
+    function getInfo()
+        public
+        view
+        returns (collateralInfo memory _info)
+    {
+        _info.collateralPriceWEI = priceOracle.getAssetPrice(address(longToken));
+        _info.collateralBalance = longToken.balanceOf(address(this));
+        _info.collateralValueWEI = _info.collateralPriceWEI.mul(_info.collateralBalance);
+
+        _info.debtPriceWEI = priceOracle.getAssetPrice(address(shortToken));
+        _info.debtBalance = shortToken.balanceOf(address(this));
+        _info.debtValueWEI = _info.debtPriceWEI.mul(_info.debtBalance);
+
+        _info.collateralValueAboveUpperRatioWEI = collateralValueChangeWEI(_info.collateralValueWEI, _info.debtValueWEI, upperRatioPERC);
+        _info.debtValueBelowLowerRatioWEI = debtValueChangeWEI(_info.collateralValueWEI, _info.debtValueWEI, lowerRatioPERC);
+        int collateralValueAboveTarget = collateralValueChangeWEI(_info.collateralValueWEI, _info.debtValueWEI, targetRatioPERC);
+
+        _info.excessCollateral = _info.collateralValueWEI.sub(_info.debtValueWEI).div(_info.collateralPriceWEI);
+        _info.actualRatioPERC = _info.collateralValueWEI.mul(ONE_HUNDRED_PERC).div(_info.debtValueWEI);
+        _info.actualLeveragePERC = leveragePERC(_info.actualRatioPERC);
     }
 
     // For a given collateral, debt and ratio, how much collateral needs to be added or removed to achieve that ratio?
@@ -400,19 +425,48 @@ contract LongShortPairToken is
             .add(ONE_HUNDRED_PERC);
     }
 
+    event delevered(
+        address _sender, 
+        uint _shortAmountRequired, 
+        uint _longAmountReturned,
+        uint _feeLong);
+
     function delever()
         public
     {
-        (uint shortAmountRequired, uint longAmountReturned, uint impliedFee) = calculateReleverage(); 
+        (uint shortAmountRequired, uint longAmountReturned, uint feeLong) = calculateDeleverage(); 
         shortToken.transferFrom(msg.sender, address(this), shortAmountRequired);
         lendingPool.repay(address(shortToken), shortAmountRequired, 0, address(this));
         shortToken.transfer(msg.sender, longAmountReturned);
 
         emit delevered(
             msg.sender,
-            longAmountRequired,
-            shortAmountReturned,
-            impliedFee);
+            shortAmountRequired,
+            longAmountReturned,
+            feeLong);
+    }
+
+    function calculateDeleverage()
+                public
+        returns (
+            uint _shortAmountRequired,
+            uint _longAmountReturned,
+            uint _feeLong)
+    {
+        // goal:
+        // 1. if we recieve EXACTLY this amount of shortToken and give EXACTLY this amount of 
+        // longToken, we are back at the target ratio.
+
+        collateralInfo memory info = getInfo();
+
+        uint collateralValueBelowLowerRatioWEI = collateralValueChangeWEI(info.excessCollateral, info.debtValueWEI, lowerRatioPERC);
+        uint rewardValueWEI = collateralValueBelowLowerRatioWEI.mul(settlementRewardPERC).div(ONE_HUNDRED_PERC);
+        
+        _longAmountReturned = collateralValueChangeWEI(info.excessCollateral, info.debtValueWEI, targetRatioPERC)
+            .div(info.collateralPriceWEI);
+        _shortAmountRequired = debtValueChangeWEI(info.excessCollateral.sub(rewardValueWEI), info.debtValueWEI, targetRatioPERC)
+            .div(info.debtPriceWEI);
+        _feeLong = rewardValueWEI.div(info.debtPriceWEI);
     }
 
     event relevered(
