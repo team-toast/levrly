@@ -2,10 +2,11 @@ module Domain
 
 open Infrastructure
 open Contracts
+open AbiTypeProvider.Common
 
-let decodeEvents<'event when 'event : (new : unit -> 'event)> 
-    (txr: Nethereum.RPC.Eth.DTOs.TransactionReceipt) = 
-    Nethereum.Contracts.EventExtensions.DecodeAllEvents<'event>(txr)
+// let decodeEvents<'event when 'event : (new : unit -> 'event)> 
+//     (txr: Nethereum.RPC.Eth.DTOs.TransactionReceipt) = 
+//     Nethereum.Contracts.EventExtensions.DecodeAllEvents<'event>(txr)
 
 let dollar n = decimal (10f ** 18f) * n |> bigint
 
@@ -18,18 +19,21 @@ module Dai =
     let grabDai (ctx: TestContext) (dai: DAI) amount = async {
         let dollar amount = decimal (10f ** 18f) * amount |> bigint
         let callData = 
-            DAI.transferFunction(
-                dst = ctx.Connection.Account.Address,
-                wad = dollar amount)
-        let call = 
-            ctx.Connection.MakeImpersonatedCallWithNoEtherAsync "0x40ec5b33f54e0e8a33a975908c5ba1c14e5bbbdf" dai.Address
-        let! txr = call callData
+            dai.transferTransactionInput(
+                dst = ctx.Connection.Account.Address, 
+                wad = dollar amount,  
+                weiValue = weiValue 0UL,
+                gasLimit = gasLlimit 9500000UL,
+                gasPrice = gasPrice 0UL,
+                From = "0x40ec5b33f54e0e8a33a975908c5ba1c14e5bbbdf",
+                To = dai.Address)
+        let! txr = ctx.Connection.MakeImpersonatedCallAsync callData
         
         if txr.Status <> ~~~ 1UL then
             failwith "Transaction not succeed"
         
-        let events = decodeEvents<DAI.TransferEventDTO>(txr)
-        if events.Count = 0 then
+        let events = DAI.TransferEventDTO.DecodeAllEvents(txr)
+        if events.Length = 0 then
             failwith "No Trnasfer event in transaction"
     }
 
@@ -40,8 +44,8 @@ module Dai =
         if txr.Status <> ~~~ 1UL then
             failwith "Transaction not succeed"
         
-        let events = decodeEvents<DAI.ApprovalEventDTO>(txr)
-        if events.Count = 0 then
+        let events = DAI.ApprovalEventDTO.DecodeAllEvents(txr)
+        if events.Length = 0 then
             failwith "No Trnasfer event in transaction"
     }
 
@@ -56,9 +60,8 @@ module Aave =
         if txr.Status <> ~~~ 1UL then
             failwith "Transaction not succeed"
         let event = 
-            decodeEvents<LendingPool.DepositEventDTO>(txr)
-            |> Seq.find (fun e -> e.Event.user = ctx.Connection.Account.Address)
-            |> fun e -> e.Event
+            LendingPool.DepositEventDTO.DecodeAllEvents(txr)
+            |> Seq.find (fun e -> e.user = ctx.Connection.Account.Address)
 
         if event.amount <> dollar amount 
         || event.user <> ctx.Address  // 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
@@ -71,9 +74,8 @@ module Aave =
         if txr.Status <> ~~~ 1UL then
             failwith "Transaction not succeed"
         let event = 
-            decodeEvents<LendingPool.BorrowEventDTO>(txr)
-            |> Seq.find (fun e -> e.Event.user = ctx.Connection.Account.Address)
-            |> fun e -> e.Event
+            LendingPool.BorrowEventDTO.DecodeAllEvents(txr)
+            |> Seq.find (fun e -> e.user = ctx.Connection.Account.Address)
         if event.user <> ctx.Address || event.amount <> amount then
             failwith "Invalid data in deposit event"
     }
@@ -99,12 +101,15 @@ module Aave =
         (price: bigint) = async {
         let dollar amount = decimal (10f ** 18f) * amount |> bigint
         let callData = 
-            MockPriceOracle.setAssetPriceFunction(
+            priceOracle.setAssetPriceTransactionInput(
                 _asset = assetAddress,
-                _price = price)
-        let call = 
-            ctx.Connection.MakeImpersonatedCallWithNoEtherAsync configration.AavePriceOracleOwnerAddress priceOracle.Address
-        let! txr = call callData
+                _price = price,
+                weiValue = weiValue 0UL,
+                gasLimit = gasLlimit 9500000UL,
+                gasPrice = gasPrice 0UL,
+                From = configration.AavePriceOracleOwnerAddress,
+                To = priceOracle.Address)
+        let! txr = ctx.Connection.MakeImpersonatedCallAsync callData
         
         if txr.Status <> ~~~ 1UL then
             failwith "Transaction not succeed"
@@ -115,16 +120,22 @@ module Aave =
         (lpAddressProvider: LendingPoolAddressesProvider)
         (priceOracleAddress: string) = async {
             let actualOwnerAddress = "0xee56e2b3d491590b5b31738cc34d5232f378a8d5"
-            let callData = LendingPoolAddressesProvider.setPriceOracleFunction(priceOracle = priceOracleAddress)
-            let call = 
-                ctx.Connection.MakeImpersonatedCallWithNoEtherAsync actualOwnerAddress lpAddressProvider.Address
-            let! txr = call callData
+            // let callData = LendingPoolAddressesProvider.setPriceOracleFunction(priceOracle = priceOracleAddress)
+            let callData = 
+                lpAddressProvider.setPriceOracleTransactionInput(
+                    priceOracle = priceOracleAddress,
+                    weiValue = weiValue 0UL,
+                    gasLimit = gasLlimit 9500000UL,
+                    gasPrice = gasPrice 0UL,
+                    From = actualOwnerAddress,
+                    To = lpAddressProvider.Address)
+            let! txr = 
+                ctx.Connection.MakeImpersonatedCallAsync callData
 
             let event = 
                 txr
-                |> decodeEvents<LendingPoolAddressesProvider.PriceOracleUpdatedEventDTO> 
+                |> LendingPoolAddressesProvider.PriceOracleUpdatedEventDTO.DecodeAllEvents
                 |> Seq.exactlyOne
-                |> fun e -> e.Event
             
             if event.newAddress.ToLowerInvariant() <> priceOracleAddress then
                 failwith "Price oracle not changed after transaction."

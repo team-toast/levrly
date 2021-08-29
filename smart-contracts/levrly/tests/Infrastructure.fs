@@ -105,33 +105,23 @@ type EthereumConnection(nodeURI: string, privKey: string) =
         |> Async.AwaitTask
 
     member this.MakeImpersonatedCallAsync 
-        weiValue 
-        gasLimit 
-        gasPrice 
-        addressFrom 
-        addressTo 
-        (functionArgs:#FunctionMessage) =
+        // weiValue 
+        // gasLimit 
+        // gasPrice 
+        // addressFrom 
+        // addressTo 
+        (input:TransactionInput) =
         async {
-            do! this.ImpersonateAccountAsync addressFrom
-
-            let txInput = functionArgs.CreateTransactionInput(addressTo)
-            
-            txInput.From <- addressFrom
-            txInput.Gas <- gasLimit
-            txInput.GasPrice <- gasPrice
-            txInput.Value <- weiValue
+            do! this.ImpersonateAccountAsync input.From
 
             let! txr = 
                 this.Web3Unsigned.TransactionManager
-                    .SendTransactionAndWaitForReceiptAsync(txInput, tokenSource = null)
+                    .SendTransactionAndWaitForReceiptAsync(input, tokenSource = null)
                     |> Async.AwaitTask
-            do! this.StopImpersonatingAccountAsync addressFrom
+            do! this.StopImpersonatingAccountAsync input.From
             return txr
         }
-       
-    member this.MakeImpersonatedCallWithNoEtherAsync addressFrom addressTo (functionArgs:#FunctionMessage) = 
-        this.MakeImpersonatedCallAsync (hexBigInt 0UL) (hexBigInt 9500000UL) (hexBigInt 0UL) addressFrom addressTo functionArgs
-    
+
     member this.HardhatResetAsync =
         let input = 
             HardhatResetInput(

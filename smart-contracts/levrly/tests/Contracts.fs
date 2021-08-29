@@ -2,10 +2,11 @@ module Contracts
 
 open System
 open Nethereum.Web3
-open SolidityProviderNS
+// open AbiTypeProvider.Common
 open Infrastructure
 
-type Contracts = SolidityTypes<"./ABIs">
+// type Contracts = SolidityTypes<"./ABIs">
+type Contracts = AbiTypeProvider.AbiTypes<"./ABIs">
 
 type LendingPool = Contracts.LendingPoolContract
 type CreditDelegationToken = Contracts.ICreditDelegationTokenContract
@@ -35,7 +36,7 @@ let snx (ctx: TestContext) =
     let address = configration.Addresses.Snx
     ERC20(address, ctx.Web3)
 
-let mockPriceOracleAt (ctx: TestContext) (address: string) =
+let priceOracleAt (ctx: TestContext) (address: string) =
     MockPriceOracle(address, ctx.Web3)
 let lendingPoolAddressProvider (ctx: TestContext) = 
     let address = "0xB53C1a33016B2DC2fF3653530bfF1848a515c8c5"
