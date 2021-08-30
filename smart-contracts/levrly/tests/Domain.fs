@@ -69,8 +69,8 @@ module Aave =
             failwith "Invalid data in deposit event"
     }
 
-    let borrowSnx (ctx: TestContext) (lendingPool: LendingPool) amount = async {        
-        let! txr = lendingPool.borrowAsync(configration.Addresses.Snx, amount, interestRateMode.Variable, 0us, ctx.Address) |> Async.AwaitTask
+    let borrowSnx (ctx: TestContext) (lendingPool: LendingPool) amount = async {
+        let! txr = await ^ lendingPool.borrowAsync(configration.Addresses.Snx, amount, interestRateMode.Variable, 0us, ctx.Address)
         if txr.Status <> ~~~ 1UL then
             failwith "Transaction not succeed"
         let event = 
