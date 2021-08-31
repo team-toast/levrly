@@ -189,9 +189,6 @@ contract LongShortPairToken is
 
             // what the issuance fees are
             uint _automationFeePERC,
-
-            // the reward for resolving the excess debt.
-            uint _settlementRewardPERC,
             
             // AAVE price oracle
             IPriceOracleGetter _priceOracle,
@@ -215,9 +212,6 @@ contract LongShortPairToken is
         // set the issuance fee variables
         automationFeePERC = _automationFeePERC;
         protocolFeePERC = 9 * 10**15;
-
-        // set the settlement reward fee percentage
-        settlementRewardPERC = _settlementRewardPERC;
 
         // set the fee account(s)
         gulper = address(1);
@@ -301,7 +295,7 @@ contract LongShortPairToken is
 
         _tokensIssued = _actualLongAdded
             .mul(ONE_HUNDRED_PERC)
-            .div(getExcessCollateral())
+            .div(getInfo().excessCollateral)
             .div(ONE_HUNDRED_PERC);
     }
 
@@ -314,19 +308,11 @@ contract LongShortPairToken is
             uint _longRedeemed,
             uint _longReturned)
     {
-        uint excessCollateral = getExcessCollateral();
+        uint excessCollateral = getInfo().excessCollateral;
         _protocolFee = excessCollateral.mul(protocolFeePERC).div(ONE_HUNDRED_PERC);
         _automationFee = excessCollateral.mul(automationFeePERC).div(ONE_HUNDRED_PERC);
         _longRedeemed = _amount.sub(_protocolFee);
         _longReturned = _longRedeemed.sub(_automationFee);
-    }
-
-    function getExcessCollateral()
-        public
-        view
-        returns (uint _excessCollateral)
-    {
-        (,,,,_excessCollateral,,) = getInfo();
     }
 
     struct collateralInfo
@@ -348,28 +334,6 @@ contract LongShortPairToken is
         uint actualLeveragePERC;
     }
 
-    function _getInfo()
-        internal
-        view
-        returns (
-            uint _collateralPriceWEI,
-            uint _collateralBalance,
-            uint _collateralValueWEI,
-
-            uint _debtPriceWEI,
-            uint _debtBalance,
-            uint _debtValueWEI,
-
-            int _collateralValueAboveUpperRatioWEI,
-            int _debtValueBelowLowerRatioWEI,
-
-            uint _excessCollateral,
-            uint _actualRatioPERC,
-            uint _actualLeveragePERC)
-    {
-
-    }
-
     function getInfo()
         public
         view
@@ -385,7 +349,6 @@ contract LongShortPairToken is
 
         _info.collateralValueAboveUpperRatioWEI = collateralValueChangeWEI(_info.collateralValueWEI, _info.debtValueWEI, upperRatioPERC);
         _info.debtValueBelowLowerRatioWEI = debtValueChangeWEI(_info.collateralValueWEI, _info.debtValueWEI, lowerRatioPERC);
-        int collateralValueAboveTarget = collateralValueChangeWEI(_info.collateralValueWEI, _info.debtValueWEI, targetRatioPERC);
 
         _info.excessCollateralValueWEI = _info.collateralValueWEI.sub(_info.debtValueWEI);
         _info.excessCollateral = _info.collateralValueWEI.sub(_info.debtValueWEI).div(_info.collateralPriceWEI);
@@ -399,10 +362,10 @@ contract LongShortPairToken is
         pure
         returns (int)
     {
-        return _collateralValueWEI
+        return int(_collateralValueWEI
             .sub(_debtValueWEI)
             .mul(leveragePERC(_ratioPERC)).div(ONE_HUNDRED_PERC)
-            - _collateralValueWEI;
+            - _collateralValueWEI);
     }
 
     // For a given collateral, debt and ratio, how much debt needs to be added or removed to achieve that ratio?
@@ -427,48 +390,17 @@ contract LongShortPairToken is
             .add(ONE_HUNDRED_PERC);
     }
 
-    event delevered(
-        address _sender, 
-        uint _shortAmountRequired, 
-        uint _longAmountReturned,
-        uint _feeLong);
-
-    function delever()
+    function settlementRewardPERC()
         public
+        view
+        returns (uint _settlementRewardPERC)
     {
-        (uint shortAmountRequired, uint longAmountReturned, uint feeLong) = calculateDeleverage(); 
-        shortToken.transferFrom(msg.sender, address(this), shortAmountRequired);
-        lendingPool.repay(address(shortToken), shortAmountRequired, 0, address(this));
-        shortToken.transfer(msg.sender, longAmountReturned);
-
-        emit delevered(
-            msg.sender,
-            shortAmountRequired,
-            longAmountReturned,
-            feeLong);
-    }
-
-    function calculateDeleverage()
-        public
-        returns (
-            uint _shortAmountRequired,
-            uint _longAmountReturned,
-            uint _feeLong)
-    {
-        collateralInfo memory info = getInfo();
-
-        uint collateralValueBelowLowerRatioWEI = -1 * collateralValueChangeWEI(info.excessCollateral, info.debtValueWEI, lowerRatioPERC);
-        uint rewardValueWEI = collateralValueBelowLowerRatioWEI.mul(settlementRewardPERC).div(ONE_HUNDRED_PERC);
-        
-        _longAmountReturned = -1 * collateralValueChangeWEI(info.excessCollateral, info.debtValueWEI, targetRatioPERC)
-            .div(info.collateralPriceWEI);
-        _shortAmountRequired = debtValueChangeWEI(info.excessCollateral.sub(rewardValueWEI), info.debtValueWEI, targetRatioPERC)
-            .div(info.debtPriceWEI);
-        _feeLong = rewardValueWEI.div(info.collateralPriceWEI);
+        _settlementRewardPERC = protocolFeePERC.add(automationFeePERC).mul(2);
     }
 
     function calculateRebalanceOffer()
         public
+        view
         returns (
             int _longAmount,   // if negative, this is the value that is required.
             int _shortAmount,  // if positive, this is the value that is returned.
@@ -482,13 +414,15 @@ contract LongShortPairToken is
         {
             // should be negative value
             int collateralValueBelowLowerRatioWEI = collateralValueChangeWEI(info.excessCollateralValueWEI, info.debtValueWEI, lowerRatioPERC);
-            _feeValueWEI = collateralValueBelowLowerRatioWEI * settlementRewardPERC() / ONE_HUNDRED_PERC;
-            _feeLong = _feeValueWEI / info.collateralPriceWEI;
+            _feeValueWEI = 
+                info.actualRatioPERC < lowerRatioPERC ? 
+                    collateralValueBelowLowerRatioWEI * int(settlementRewardPERC().div(ONE_HUNDRED_PERC)) :
+                    0;
             
-            _longAmount = collateralValueChangeWEI(info.excessCollateralValueWEI, info.debtValueWEI, targetRatioPERC) / info.collateralPriceWEI;
+            _longAmount = collateralValueChangeWEI(info.excessCollateralValueWEI, info.debtValueWEI, targetRatioPERC) / int(info.collateralPriceWEI);
 
             //ensures less short is required than long is returned
-            _shortAmount = debtValueChangeWEI(info.excessCollateralValueWEI + _feeLong, info.debtValueWEI, targetRatioPERC) / info.debtPriceWEI;
+            _shortAmount = debtValueChangeWEI(uint(int(info.excessCollateralValueWEI) + _feeLong), info.debtValueWEI, targetRatioPERC) / int(info.debtPriceWEI);
         }
 
         // if we are above the target ratio
@@ -496,14 +430,41 @@ contract LongShortPairToken is
         {
             // should be positive value
             int collateralValueAboveUpperRatioWEI = collateralValueChangeWEI(info.excessCollateralValueWEI, info.debtValueWEI, upperRatioPERC);
-            _feeValueWEI = collateralValueAboveUpperRatioWEI * settlementRewardPERC() / ONE_HUNDRED_PERC;
-            
+            _feeValueWEI = 
+                info.actualRatioPERC > upperRatioPERC ? 
+                    collateralValueAboveUpperRatioWEI * int(settlementRewardPERC().div(ONE_HUNDRED_PERC)) : 
+                    0;
+
             // should ensure that less long is required than short is returned
-            _longAmount = collateralValueChangeWEI(info.excessCollateral, info.debtValueWEI, targetRatioPERC) / info.collateralPriceWEI;
-            _shortAmount = debtValueChangeWEI(info.excessCollateral + _feeValueWEI, info.debtValueWEI, targetRatioPERC) / info.debtPriceWEI;
+            _longAmount = collateralValueChangeWEI(info.excessCollateral, info.debtValueWEI, targetRatioPERC) / int(info.collateralPriceWEI);
+            
+            _shortAmount = debtValueChangeWEI(uint(int(info.excessCollateral) + _feeValueWEI), info.debtValueWEI, targetRatioPERC) / int(info.debtPriceWEI);
         }
 
-        _feeLong = _feeValueWEI / info.collateralPriceWEI;
+        _feeLong = _feeValueWEI / int(info.collateralPriceWEI);
+    }
+
+    event delevered(
+        address _sender, 
+        uint _shortAmountRequired, 
+        uint _longAmountReturned,
+        uint _feeLong);
+
+    function delever()
+        public
+    {
+        (int longAmount, int shortAmount, , int feeLong) = calculateRebalanceOffer(); 
+        require(shortAmount < 0, "deleverage not needed");
+        require(longAmount < 0, "rabalance calculation vaulty");
+        shortToken.transferFrom(msg.sender, address(this), uint(-1 * shortAmount));
+        lendingPool.repay(address(shortToken), uint(-1 * shortAmount), 0, address(this));
+        shortToken.transfer(msg.sender, uint(longAmount));
+
+        emit delevered(
+            msg.sender,
+            uint(-1 * shortAmount),
+            uint(longAmount),
+            uint(-1 * feeLong));
     }
 
     event relevered(
@@ -515,35 +476,18 @@ contract LongShortPairToken is
     function relever()
         public
     {
-        (uint longAmountRequired, uint shortAmountReturned, uint impliedFee) = calculateReleverage(); 
-        longToken.transferFrom(msg.sender, address(this), longAmountRequired);
-        lendingPool.deposit(address(longToken), longAmountRequired, address(this), 0);
-        lendingPool.borrow(address(), shortAmountReturned, 0, 0, msg.sender);
+        (int longAmount, int shortAmount, , int feeLong) = calculateRebalanceOffer(); 
+        require(longAmount < 0, "releverage not needed");
+        require(shortAmount < 0, "rabalance calculation vaulty");
+        longToken.transferFrom(msg.sender, address(this), uint(-1 * longAmount));
+        lendingPool.deposit(address(longToken), uint(-1 * longAmount), address(this), 0);
+        lendingPool.borrow(address(shortToken), uint(shortAmount), 0, 0, msg.sender);
 
         emit relevered(
             msg.sender,
-            longAmountRequired,
-            shortAmountReturned,
-            impliedFee);
-    }
-
-    function calculateShortReward()
-        public
-        returns (
-            uint _longAmountRequired, 
-            uint _shortAmountReturned,
-            uint _feeLong)
-    {
-        collateralInfo memory info = getInfo();
-
-        uint debtValueAboveUpperRatioWEI = -1 * debtValueChangeWEI(info.excessCollateral, info.debtValueWEI, upperRatioPERC);
-        uint rewardValueWEI = debtValueAboveUpperRatioWEI.mul(settlementRewardPERC).div(ONE_HUNDRED_PERC);
-        
-        _shortAmountReturned = -1 * collateralValueChangeWEI(info.excessCollateral, info.debtValueWEI, targetRatioPERC)
-            .div(info.collateralPriceWEI);
-        _longAmountRequired = collateralValueChangeWEI(info.excessCollateral.sub(rewardValueWEI), info.debtValueWEI, targetRatioPERC)
-            .div(info.debtPriceWEI);
-        _feeLong = rewardValueWEI.div(info.collateralPriceWEI);
+            uint(longAmount),
+            uint(-1 * shortAmount),
+            uint(feeLong));
     }
 }
 

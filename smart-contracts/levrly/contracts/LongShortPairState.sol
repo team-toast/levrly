@@ -36,10 +36,6 @@ contract LongShortPairState
     uint public automationFeePERC;
     uint public protocolFeePERC;
 
-    // This is the reward applicable to the portion of outside of the lower or upper
-    // bounds. It forms part of the methods to fully lever or delever the contract. 
-    uint public settlementRewardPERC;
-
     // Thought: So what will happen if we fixed the ratios and the fees?
     // Ratios: There would be no capacity to interfene and there would be losses
     // due to rebalancing too soon or due to rebalancing too late.
