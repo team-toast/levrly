@@ -412,35 +412,27 @@ contract LongShortPairToken is
         // if we are below the target ratio.
         if (info.actualRatioPERC < targetRatioPERC)
         {
-            // should be negative value
-            int collateralValueBelowLowerRatioWEI = collateralValueChangeWEI(info.excessCollateralValueWEI, info.debtValueWEI, lowerRatioPERC);
+            // should be a negative value
+            int collateralBelowLowerRatioValueWEI = collateralValueChangeWEI(info.excessCollateralValueWEI, info.debtValueWEI, lowerRatioPERC);
             _feeValueWEI = 
                 info.actualRatioPERC < lowerRatioPERC ? 
-                    collateralValueBelowLowerRatioWEI * int(settlementRewardPERC().div(ONE_HUNDRED_PERC)) :
+                    collateralBelowLowerRatioValueWEI * int(settlementRewardPERC().div(ONE_HUNDRED_PERC)) :
                     0;
-            
-            _longAmount = collateralValueChangeWEI(info.excessCollateralValueWEI, info.debtValueWEI, targetRatioPERC) / int(info.collateralPriceWEI);
-
-            //ensures less short is required than long is returned
-            _shortAmount = debtValueChangeWEI(uint(int(info.excessCollateralValueWEI) + _feeLong), info.debtValueWEI, targetRatioPERC) / int(info.debtPriceWEI);
         }
 
         // if we are above the target ratio
         else
         {
-            // should be positive value
-            int collateralValueAboveUpperRatioWEI = collateralValueChangeWEI(info.excessCollateralValueWEI, info.debtValueWEI, upperRatioPERC);
+            // should be a positive value
+            int collateralAboveUpperRatioValueWEI = collateralValueChangeWEI(info.excessCollateralValueWEI, info.debtValueWEI, upperRatioPERC);
             _feeValueWEI = 
                 info.actualRatioPERC > upperRatioPERC ? 
-                    collateralValueAboveUpperRatioWEI * int(settlementRewardPERC().div(ONE_HUNDRED_PERC)) : 
+                    collateralAboveUpperRatioValueWEI * int(settlementRewardPERC().div(ONE_HUNDRED_PERC)) : 
                     0;
-
-            // should ensure that less long is required than short is returned
-            _longAmount = collateralValueChangeWEI(info.excessCollateral, info.debtValueWEI, targetRatioPERC) / int(info.collateralPriceWEI);
-            
-            _shortAmount = debtValueChangeWEI(uint(int(info.excessCollateral) + _feeValueWEI), info.debtValueWEI, targetRatioPERC) / int(info.debtPriceWEI);
         }
 
+        _longAmount = collateralValueChangeWEI(info.excessCollateralValueWEI, info.debtValueWEI, targetRatioPERC) / int(info.collateralPriceWEI);
+        _shortAmount = debtValueChangeWEI(uint(int(info.excessCollateralValueWEI) + _feeValueWEI), info.debtValueWEI, targetRatioPERC) / int(info.debtPriceWEI);
         _feeLong = _feeValueWEI / int(info.collateralPriceWEI);
     }
 
