@@ -37,10 +37,10 @@ let ``DAI acquired`` () =
     <| fun ctx -> async {
         let dai = dai ctx
 
-        do! Dai.grabDai ctx dai 1_000m
+        do! Dai.grab ctx dai 1_000m
 
         let! balance = await ^  dai.balanceOfQueryAsync ctx.Address
-        Assert.Equal(balance, dollar 1_000m)
+        Assert.Equal(balance, Dai.dollar 1_000m)
     }
 
 [<Fact>]
@@ -51,16 +51,16 @@ let ``DAI deposited`` () =
         let aDai = aDai ctx
         let lendingPool = lendingPool ctx
         
-        do! Dai.grabDai ctx dai 1_000m
-        do! Dai.approveLendingPoolOnDai ctx dai 1_000m
+        do! Dai.grab ctx dai 1_000m
+        do! Dai.approveLendingPool ctx dai 1_000m
 
         do! Aave.depositDai ctx lendingPool 1_000m
         
         let! aTokenBalance = await ^ aDai.balanceOfQueryAsync(ctx.Address)
-        Assert.Equal(dollar 1_000m, aTokenBalance)
+        Assert.Equal(Dai.dollar 1_000m, aTokenBalance)
 
         let! daiBalance = await ^ dai.balanceOfQueryAsync(ctx.Address)
-        Assert.Equal(dollar 0m, daiBalance) 
+        Assert.Equal(Dai.dollar 0m, daiBalance) 
     }
 
 [<Fact>]
@@ -71,8 +71,8 @@ let ``SNX borrowed against DAI collaterall`` () =
         let snx = snx ctx
         let lendingPool = lendingPool ctx
 
-        do! Dai.grabDai ctx dai 1_000m
-        do! Dai.approveLendingPoolOnDai ctx dai 1_000m
+        do! Dai.grab ctx dai 1_000m
+        do! Dai.approveLendingPool ctx dai 1_000m
         do! Aave.depositDai ctx lendingPool 1_000m
         do! Aave.borrowSnx ctx lendingPool 500I
         
@@ -88,8 +88,8 @@ let ``SNX can be transferred`` () =
         let snx = snx ctx
         let lendingPool = lendingPool ctx
 
-        do! Dai.grabDai ctx dai 1_000m
-        do! Dai.approveLendingPoolOnDai ctx dai 1_000m
+        do! Dai.grab ctx dai 1_000m
+        do! Dai.approveLendingPool ctx dai 1_000m
         do! Aave.depositDai ctx lendingPool 1_000m
         do! Aave.borrowSnx ctx lendingPool 500I
         
@@ -147,8 +147,8 @@ let ``Money lost`` () =
         let lendingPool = lendingPool ctx
         
         do! Aave.setPriceOracle ctx lpAddressProvider priceOracle.Address
-        do! Dai.grabDai ctx dai 1_000m
-        do! Dai.approveLendingPoolOnDai ctx dai 1_000m
+        do! Dai.grab ctx dai 1_000m
+        do! Dai.approveLendingPool ctx dai 1_000m
         do! Aave.depositDai ctx lendingPool 1_000m
         do! Aave.borrowSnx ctx lendingPool 1_000I
         

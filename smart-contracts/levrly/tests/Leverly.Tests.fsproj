@@ -9,7 +9,9 @@
     <Compile Include="ContractDeployment.fs" />
     <Compile Include="Infrastructure.fs" />
     <Compile Include="Contracts.fs" />
-    <Compile Include="Domain.fs" />
+    <Compile Include="Domain.Common.fs" />
+    <Compile Include="Domain.Dai.fs" />
+    <Compile Include="Domain.Aave.fs" />
     <Compile Include="Tests.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
