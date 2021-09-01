@@ -395,10 +395,15 @@ contract LongShortPairToken is
         view
         returns (uint _settlementRewardPERC)
     {
+        // this would work for all scenarios, albeit suboptimally.
+        _settlementRewardPERC = automationFeePERC;
+
+        // this would be the maximum amount we can pay if we had the users who enter above the upper ratio
+        // also call the rebalance function while waiving the fee.
         _settlementRewardPERC = protocolFeePERC.add(automationFeePERC).mul(2);
     }
 
-    function calculateRebalanceOffer()
+    function calculateRebalanceOffer(bool _waiveFee)
         public
         view
         returns (
@@ -415,7 +420,7 @@ contract LongShortPairToken is
             // should be a negative value
             int collateralBelowLowerRatioValueWEI = collateralValueChangeWEI(info.excessCollateralValueWEI, info.debtValueWEI, lowerRatioPERC);
             _feeValueWEI = 
-                info.actualRatioPERC < lowerRatioPERC ? 
+                !_waiveFee && info.actualRatioPERC < lowerRatioPERC ? 
                     collateralBelowLowerRatioValueWEI * int(settlementRewardPERC().div(ONE_HUNDRED_PERC)) :
                     0;
         }
@@ -426,7 +431,7 @@ contract LongShortPairToken is
             // should be a positive value
             int collateralAboveUpperRatioValueWEI = collateralValueChangeWEI(info.excessCollateralValueWEI, info.debtValueWEI, upperRatioPERC);
             _feeValueWEI = 
-                info.actualRatioPERC > upperRatioPERC ? 
+                !_waiveFee && info.actualRatioPERC > upperRatioPERC ? 
                     collateralAboveUpperRatioValueWEI * int(settlementRewardPERC().div(ONE_HUNDRED_PERC)) : 
                     0;
         }
@@ -442,10 +447,10 @@ contract LongShortPairToken is
         uint _longAmountReturned,
         uint _feeLong);
 
-    function delever()
+    function delever(bool _waiveFee)
         public
     {
-        (int longAmount, int shortAmount, , int feeLong) = calculateRebalanceOffer(); 
+        (int longAmount, int shortAmount, , int feeLong) = calculateRebalanceOffer(_waiveFee); 
         require(shortAmount < 0, "deleverage not needed");
         require(longAmount < 0, "rabalance calculation vaulty");
         shortToken.transferFrom(msg.sender, address(this), uint(-1 * shortAmount));
@@ -465,10 +470,10 @@ contract LongShortPairToken is
         uint _shortAmountReturned,
         uint _impliedFee);
 
-    function relever()
+    function relever(bool _waiveFee)
         public
     {
-        (int longAmount, int shortAmount, , int feeLong) = calculateRebalanceOffer(); 
+        (int longAmount, int shortAmount, , int feeLong) = calculateRebalanceOffer(_waiveFee); 
         require(longAmount < 0, "releverage not needed");
         require(shortAmount < 0, "rabalance calculation vaulty");
         longToken.transferFrom(msg.sender, address(this), uint(-1 * longAmount));
