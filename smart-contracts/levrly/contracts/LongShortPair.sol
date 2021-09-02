@@ -33,6 +33,38 @@ contract IPriceOracleGetter {
         returns(address);
 }
 
+contract ILendingPool
+{
+    function deposit(
+            address asset,
+            uint256 amount,
+            address onBehalfOf,
+            uint16 referralCode) 
+        external;
+
+    function withdraw(
+            address asset,
+            uint256 amount,
+            address to) 
+        public 
+        returns (uint256);
+
+    function borrow(
+            address asset,
+            uint256 amount,
+            uint256 interestRateMode,
+            uint16 referralCode,
+            address onBehalfOf) 
+        external;
+
+    function repay(
+            address asset,
+            uint256 amount,
+            uint256 rateMode,
+            address onBehalfOf) 
+        external returns (uint256);
+}
+
 contract ILongShortPairToken
 {
     using SafeMath for uint;
@@ -182,10 +214,6 @@ contract LongShortPairToken is
             uint _lowerRatioPERC,               // target - 20 => 180
             uint _targetRatioPERC,              // target      => 200
             uint _upperRatioPERC,               // target + 20 => 220
-            /*
-            uint _lowerDefiSaverRatio           // _lowerRatio - 10 => 170
-            uint _upperDefiSaverRatio           // _upperRatio + 10 => 230
-            */
 
             // what the issuance fees are
             uint _automationFeePERC,
@@ -218,6 +246,18 @@ contract LongShortPairToken is
 
         priceOracle = _priceOracle;
         lendingPool = _lendingPool;
+    }
+
+    function init(uint _initialCollateral)
+        public 
+    {
+        require(interestToken.balanceOf(address(this)) == 0, "can only be called once");
+        longToken.transferFrom(address(msg.sender), address(this), _initialCollateral);
+        lendingPool.deposit(address(longToken), _initialCollateral, address(this), 0);
+        uint debtAmount = _initialCollateral
+            .mul(leveragePERC(targetRatioPERC).sub(ONE_HUNDRED_PERC))
+            .div(leveragePERC(targetRatioPERC));
+        lendingPool.borrow(address(shortToken), debtAmount, 0, 0, msg.sender);
     }
 
     // issues the LSP by providing the longToken
@@ -486,38 +526,6 @@ contract LongShortPairToken is
             uint(-1 * shortAmount),
             uint(feeLong));
     }
-}
-
-contract ILendingPool
-{
-    function deposit(
-            address asset,
-            uint256 amount,
-            address onBehalfOf,
-            uint16 referralCode) 
-        external;
-
-    function withdraw(
-            address asset,
-            uint256 amount,
-            address to) 
-        public 
-        returns (uint256);
-
-    function borrow(
-            address asset,
-            uint256 amount,
-            uint256 interestRateMode,
-            uint16 referralCode,
-            address onBehalfOf) 
-        external;
-
-    function repay(
-            address asset,
-            uint256 amount,
-            uint256 rateMode,
-            address onBehalfOf) 
-        external returns (uint256);
 }
 
 // Naming convention for pairs:
