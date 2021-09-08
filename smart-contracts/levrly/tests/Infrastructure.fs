@@ -34,6 +34,9 @@ let configration =
     AccountPrivateKey0 = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
     AccountPrivateKey1 = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"|}
 
+/// Equal of 'uint(-1)' in solidity.
+let uint256MaxValue = 
+    115792089237316195423570985008687907853269984665640564039457584007913129639935I
 
 let private hexBigInt (n: uint64) = HexBigInteger(BigInteger(n))
 
@@ -147,11 +150,12 @@ type EthereumConnection(nodeURI: string, privKey: string) =
             receiptRequestCancellationToken = null,
             values = constructorParams)
 
-type TestContext(privateKey: string) =
+type TestContext(privateKey: string, preserveState: bool) =
     let connection = EthereumConnection("http://127.0.0.1:8545/", privateKey)
     
-    do connection.HardhatResetAsync.Wait()
-    new() = new TestContext(configration.AccountPrivateKey0)
+    do if not preserveState then connection.HardhatResetAsync.Wait()
+
+    new() = new TestContext(configration.AccountPrivateKey0, false)
 
 
     member _.Web3 = connection.Web3
@@ -174,9 +178,10 @@ let withContextAsync (f: TestContext -> Async<unit>) =
     f ctx |> Async.RunSynchronously
 
 let inNestedContextAsync privateKey (f: TestContext -> Async<'a>) =
-    use ctx = new TestContext(privateKey)
+    use ctx = new TestContext(privateKey, true)
     f ctx
     
+// TODO: Make it work.
 let inNestedImpersonateContextAsync address (f: TestContext -> Async<'a>) = async {
     use ctx = new TestContext()
     do! ctx.Connection.ImpersonateAccountAsync address

@@ -21,15 +21,23 @@ let ``DAI total supply non zero`` () =
     <| fun ctx -> 
         let dai = dai ctx
         let totalSupply = dai.totalSupplyQuery()
-        Assert.True(bigint 1 < totalSupply, $"Actual supply: {totalSupply}")
+        Assert.True(1I < totalSupply, $"Actual supply: {totalSupply}")
 
 [<Fact>]
-let ``Some huy has DAI`` () = 
+let ``Some guy has DAI`` () = 
     withContext 
     <| fun ctx -> 
         let dai = dai ctx
         let balance = dai.balanceOfQuery("0x40ec5b33f54e0e8a33a975908c5ba1c14e5bbbdf")
-        Assert.Equal(bigint 60309027128217166192534853m, balance)
+        Assert.Equal(60309027128217166192534853I, balance)
+
+[<Fact>]
+let ``Some guy has SNX`` () = 
+    withContext 
+    <| fun ctx -> 
+        let snx = snx ctx
+        let balance = snx.balanceOfQuery("0xf05e2a70346560d3228c7002194bb7c5dc8fe100")
+        Assert.Equal(16414200000000000000000I, balance)
 
 [<Fact>]
 let ``DAI acquired`` () = 
@@ -178,4 +186,72 @@ let ``Money lost`` () =
         
         let! acc = await ^ lendingPool.getUserAccountDataQueryAsync(ctx.Address)
         Assert.Equal(0I, acc.totalDebtETH)
+    }
+
+[<Fact>]
+let ``Liqudation can be done on account with bad health`` () =
+    withContextAsync
+    <| fun ctx -> async {
+        let lpAddressProvider = lendingPoolAddressProvider ctx
+        let! oldPriceOracleAddress = await ^ lpAddressProvider.getPriceOracleQueryAsync()
+        let! priceOracle = deployContract ctx (priceOracleAt ctx) [ oldPriceOracleAddress ]
+        let dai = dai ctx
+        let snx = snx ctx
+        let lendingPool = lendingPool ctx
+        
+        do! Aave.setPriceOracle ctx lpAddressProvider priceOracle.Address
+        do! Dai.grab ctx dai 1_000m
+        
+        do! Dai.approveLendingPool ctx dai 1_000m
+        do! Aave.depositDai ctx lendingPool 1_000m
+        do! Aave.borrowSnx ctx lendingPool 1_000_000I
+
+        // Health factor value asserted this way because there little inaccurate calculation algorithm.
+        let! acc = await ^ lendingPool.getUserAccountDataQueryAsync(ctx.Address)
+        Assert.True(47266942514142081132675787460000I < acc.healthFactor, 
+                    $"Health factor was {acc.healthFactor}")
+        
+        // Decrease collaterall cost
+        do! Aave.setAssetPrice ctx priceOracle configration.Addresses.Dai 1I
+
+        // Assert account health factor below 1
+        let! acc = await ^ lendingPool.getUserAccountDataQueryAsync(ctx.Address)
+        Assert.Equal(127266942411708559I, acc.healthFactor)
+
+        // Assert liquidator's DAI balance is zero before he get his reward for covering debt.
+        let! liquidatorDaiBalace = await ^ dai.balanceOfQueryAsync(configration.AccountAddress1)
+        Assert.Equal(0I, liquidatorDaiBalace)
+
+
+        do! inNestedContextAsync configration.AccountPrivateKey1 
+            <| fun ctx -> async {
+                let snx = Contracts.snx ctx
+                let lendingPool = Contracts.lendingPool ctx
+                
+                do! Erc20.grab ctx snx "0xf05e2a70346560d3228c7002194bb7c5dc8fe100" 16414200000000000000000I
+                do! Erc20.approveLendingPool ctx snx 16414200000000000000000I
+                
+                let! txr = 
+                    await ^ lendingPool.liquidationCallAsync(
+                        collateralAsset = dai.Address,
+                        debtAsset = snx.Address,
+                        user = configration.AccountAddress0,
+                        debtToCover = 499_999I, // Half of debt minus one.
+                        receiveAToken = false)
+                let event = Seq.head ^ LendingPool.LiquidationCallEventDTO.DecodeAllEvents(txr)
+                Assert.Equal(1000000010835640852399I, event.liquidatedCollateralAmount)
+            }
+        
+        // Liquidator's SNX balance decreases. 151485 SNX spend on covering debt.
+        let! liquidatorSnxBalace = await ^ snx.balanceOfQueryAsync(configration.AccountAddress1)
+        Assert.Equal(16414199999999999848515I, liquidatorSnxBalace)
+
+        // So much DAI's recieved because it cost just 1 wei now.
+        let! liquidatorDaiBalace = await ^ dai.balanceOfQueryAsync(configration.AccountAddress1)
+        Assert.Equal(1000000010835640852399I, liquidatorDaiBalace)
+
+        // And I do not finnaly understend this point. According to protocol documentation, 
+        // liquidation process must increase health factor.
+        let! acc = await ^ lendingPool.getUserAccountDataQueryAsync(ctx.Address)
+        Assert.Equal(0I, acc.healthFactor) 
     }

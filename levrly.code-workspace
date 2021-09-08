@@ -1,0 +1,30 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "smart-contracts\\levrly\\tests"
+		}
+	],
+	"settings": {
+		"solidity.compileUsingRemoteVersion": "v0.5.17+commit.d19bba13",
+		"workbench.colorCustomizations": {
+			"activityBar.activeBackground": "#97d2a6",
+			"activityBar.activeBorder": "#8d7ac5",
+			"activityBar.background": "#97d2a6",
+			"activityBar.foreground": "#15202b",
+			"activityBar.inactiveForeground": "#15202b99",
+			"activityBarBadge.background": "#8d7ac5",
+			"activityBarBadge.foreground": "#15202b",
+			"statusBar.background": "#73c387",
+			"statusBar.foreground": "#15202b",
+			"statusBarItem.hoverBackground": "#4fb468",
+			"titleBar.activeBackground": "#73c387",
+			"titleBar.activeForeground": "#15202b",
+			"titleBar.inactiveBackground": "#73c38799",
+			"titleBar.inactiveForeground": "#15202b99"
+		},
+		"peacock.color": "#73c387"
+	}
+}

@@ -5,14 +5,13 @@ open Infrastructure
 open Contracts
 open AbiTypeProvider.Common
 
-let dollar n = decimal (10f ** 18f) * n |> bigint
+let dollar n = bigint (decimal (10f ** 18f) * n)
 
 let checkDaiBalance (ctx: TestContext) (dai: DAI) = async {
     return! dai.balanceOfQueryAsync ctx.Connection.Account.Address |> Async.AwaitTask
 }
 
 let grab (ctx: TestContext) (dai: DAI) amount = async {
-    let dollar amount = decimal (10f ** 18f) * amount |> bigint
     let callData = 
         dai.transferTransactionInput(
             dst = ctx.Connection.Account.Address, 
@@ -34,8 +33,7 @@ let grab (ctx: TestContext) (dai: DAI) amount = async {
 
 let approveLendingPool (ctx: TestContext) (dai: DAI) amount = async {
     let dollar amount = decimal (10f ** 18f) * amount |> bigint
-    let! txr = dai.approveAsync(configration.Addresses.AaveLendingPool, dollar amount)
-               |> Async.AwaitTask
+    let! txr = await ^ dai.approveAsync(configration.Addresses.AaveLendingPool, dollar amount)
     if txr.Status <> ~~~ 1UL then
         failwith "Transaction not succeed"
     

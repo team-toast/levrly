@@ -10,16 +10,17 @@
     <Compile Include="Infrastructure.fs" />
     <Compile Include="Contracts.fs" />
     <Compile Include="Domain.Common.fs" />
+    <Compile Include="Domain.Erc20.fs" />
     <Compile Include="Domain.Dai.fs" />
     <Compile Include="Domain.Aave.fs" />
+    <Compile Include="Domain.OneInch.fs" />
     <Compile Include="Tests.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.9.4" />
     <PackageReference Include="Nethereum.Web3" Version="4.0.5" />
-    <!-- <PackageReference Include="SolidityProvider" Version="1.1.5" /> -->
-    <PackageReference Include="AbiTypeProvider" Version="0.0.6-beta" />
+    <PackageReference Include="AbiTypeProvider" Version="0.0.6" />
     <PackageReference Include="xunit" Version="2.4.1" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.4.3">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

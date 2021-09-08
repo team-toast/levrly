@@ -36,6 +36,9 @@ let snx (ctx: TestContext) =
     let address = configration.Addresses.Snx
     ERC20(address, ctx.Web3)
 
+let erc20 (ctx: TestContext) address =
+    ERC20(address, ctx.Web3)
+
 let priceOracleAt (ctx: TestContext) (address: string) =
     MockPriceOracle(address, ctx.Web3)
 let lendingPoolAddressProvider (ctx: TestContext) = 

@@ -29,6 +29,23 @@ let depositDai (ctx: TestContext) (lendingPool: LendingPool) amount = async {
         failwith "Invalid data in deposit event"
 }
 
+let depositSnx (ctx: TestContext) (lendingPool: LendingPool) amount = async {
+    let! txr = lendingPool.depositAsync(configration.Addresses.Snx,
+                                        amount, 
+                                        ctx.Connection.Account.Address, 
+                                        uint16 0) |> Async.AwaitTask
+    if txr.Status <> ~~~ 1UL then
+        failwith "Transaction not succeed"
+    let event = 
+        LendingPool.DepositEventDTO.DecodeAllEvents(txr)
+        |> Seq.find (fun e -> e.user = ctx.Connection.Account.Address)
+
+    if event.amount <> amount 
+    || event.user <> ctx.Address  // 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
+    || event.reserve <> "0xC011a73ee8576Fb46F5E1c5751cA3B9Fe0af2a6F" then
+        failwith $"Invalid data in deposit event"
+}
+
 let borrowSnx (ctx: TestContext) (lendingPool: LendingPool) amount = async {
     let! txr = await ^ lendingPool.borrowAsync(configration.Addresses.Snx, amount, interestRateMode.Variable, 0us, ctx.Address)
     if txr.Status <> ~~~ 1UL then
