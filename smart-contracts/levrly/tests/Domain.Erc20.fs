@@ -14,23 +14,29 @@ let grab (ctx: TestContext) (token: ERC20) from amount = async {
             gasPrice = gasPrice 0UL,
             From = from,
             To = token.Address)
-    let! txr = ctx.Connection.MakeImpersonatedCallAsync callData
-    
-    if txr.Status <> ~~~ 1UL then
-        failwith "Transaction not succeed"
-    
-    let events = ERC20.TransferEventDTO.DecodeAllEvents(txr)
-    if events.Length = 0 then
-        failwith "No Trnasfer event in transaction"
+    try
+        let! txr = ctx.Connection.MakeImpersonatedCallAsync callData
+        
+        if txr.Status <> ~~~ 1UL then
+            failwith "Transaction not succeed"
+        
+        let events = ERC20.TransferEventDTO.DecodeAllEvents(txr)
+        if events.Length = 0 then
+            failwith "No Trnasfer event in transaction"
+    with e ->
+        failwith $"Exception on attempt to grab {token.Address}: {e.Message}"
 }
 
 let approveLendingPool (ctx: TestContext) (token: ERC20) amount = async {
-    let! txr = await ^ token.approveAsync(configration.Addresses.AaveLendingPool, amount)
-    
-    if txr.Status <> ~~~ 1UL then
-        failwith "Transaction not succeed"
-    
-    let events = ERC20.ApprovalEventDTO.DecodeAllEvents(txr)
-    if events.Length = 0 then
-        failwith "No Trnasfer event in transaction"
+    try
+        let! txr = await ^ token.approveAsync(configration.Addresses.AaveLendingPool, amount)
+        
+        if txr.Status <> ~~~ 1UL then
+            failwith "Transaction not succeed"
+        
+        let events = ERC20.ApprovalEventDTO.DecodeAllEvents(txr)
+        if events.Length = 0 then
+            failwith "No Trnasfer event in transaction"
+    with e ->
+        failwith $"Exception on attempt to approve lending pool on {token.Address}: {e.Message}"
 }

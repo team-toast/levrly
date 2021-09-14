@@ -42,6 +42,8 @@ let private hexBigInt (n: uint64) = HexBigInteger(BigInteger(n))
 
 type private EvmSnapshot(client) = inherit RpcRequestResponseHandlerNoParam<string>(client, "evm_snapshot")
 
+let ``1e+18`` = 1_000_000_000_000_000_000I
+
 type HardhatForkInput() =
     [<JsonProperty(PropertyName = "jsonRpcUrl")>]
     member val JsonRpcUrl = "" with get, set
