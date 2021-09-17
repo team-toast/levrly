@@ -15,6 +15,8 @@ type LendingPoolAddressesProvider = Contracts.LendingPoolAddressesProviderContra
 type ERC20 = Contracts.ERC20Contract
 type DAI = Contracts.DaiContract
 type MockPriceOracle = Contracts.MockPriceOracleContract
+type ZeroEx = Contracts.ZeroExContract
+type OneInch = Contracts.OneInchContract
 
 let lendingPool (ctx: TestContext) = 
     let address = configration.Addresses.AaveLendingPool

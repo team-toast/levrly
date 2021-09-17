@@ -128,7 +128,7 @@ let ``DAI price changed`` () =
     }
 
 [<Fact>]
-let ``Asset prices are as expectd`` () =
+let ``Asset prices are as expected`` () =
     withContextAsync
     <| fun ctx -> async {
         let lpAddressProvider = lendingPoolAddressProvider ctx
@@ -189,7 +189,7 @@ let ``Money lost`` () =
     }
 
 [<Fact>]
-let ``Liqudation can be done on account with bad health`` () =
+let ``Liquidation can be done on account with bad health`` () =
     withContextAsync
     <| fun ctx -> async {
         let lpAddressProvider = lendingPoolAddressProvider ctx
@@ -326,4 +326,34 @@ let ``Liquidated account health more then 1`` () =
         // Health factor increased.
         let! acc = await ^ lendingPool.getUserAccountDataQueryAsync(ctx.Address)
         Assert.Equal(341493125242737982I, acc.healthFactor)
+    }
+
+open AbiTypeProvider.Common
+open Nethereum.Hex.HexTypes
+
+[<Fact>]
+let ``Swap ETH to DAI using 1Inch`` () =
+    withContextAsync
+    <| fun ctx -> async {
+        let (contractAddress, data, value, gas, gasPrice) =
+            OneInch.getSwapData
+                "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+                "0x6b175474e89094c44da98b954eedeac495271d0f"
+                "0x52bc44d5378309ee2abf1539bf71de1b7d7be3b5" // ctx.Address
+                100000000000000000000I
+                1
+        let oneInch = Contracts.OneInch(contractAddress, ctx.Web3)
+        let! tx = oneInch.SendTxAsync data (WeiValue(bigint value)) (GasLimit(gas)) (GasPrice(bigint gasPrice)) |> Async.AwaitTask
+        Assert.Equal(HexBigInteger(1I), tx.Status)
+    }
+
+[<Fact>]
+let ``Swap ETH to DAI using ZeroEx`` () =
+    withContextAsync
+    <| fun ctx -> async {
+        let (contractAddress, data) =
+            ZeroEx.getSwapData "DAI" "WETH" 100000000000000000I
+        let oneInch = Contracts.ZeroEx(contractAddress, ctx.Web3)
+        let! tx = oneInch.SendTxAsync data (WeiValue(0I)) (GasLimit(12450000I)) (GasPrice(1I)) |> Async.AwaitTask
+        Assert.Equal(HexBigInteger(1I), tx.Status)
     }

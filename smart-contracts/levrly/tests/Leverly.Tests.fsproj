@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net5.0</TargetFramework>
     <IsPackable>false</IsPackable>
@@ -13,11 +13,13 @@
     <Compile Include="Domain.Erc20.fs" />
     <Compile Include="Domain.Dai.fs" />
     <Compile Include="Domain.Aave.fs" />
+    <Compile Include="Domain.ZeroEx.fs" />
     <Compile Include="Domain.OneInch.fs" />
     <Compile Include="Tests.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="FSharp.Data" Version="4.2.2" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.9.4" />
     <PackageReference Include="Nethereum.Web3" Version="4.0.5" />
     <PackageReference Include="AbiTypeProvider" Version="0.0.6" />
