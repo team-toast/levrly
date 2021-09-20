@@ -339,11 +339,11 @@ let ``Swap ETH to DAI using 1Inch`` () =
             OneInch.getSwapData
                 "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
                 "0x6b175474e89094c44da98b954eedeac495271d0f"
-                "0x52bc44d5378309ee2abf1539bf71de1b7d7be3b5" // ctx.Address
-                100000000000000000000I
-                1
+                configration.AccountAddress0
+                ``1e+18``
+                3
         let oneInch = Contracts.OneInch(contractAddress, ctx.Web3)
-        let! tx = oneInch.SendTxAsync data (WeiValue(bigint value)) (GasLimit(gas)) (GasPrice(bigint gasPrice)) |> Async.AwaitTask
+        let! tx = oneInch.SendTxAsync data (WeiValue(value)) (GasLimit(gas)) (GasPrice(gasPrice)) |> Async.AwaitTask
         Assert.Equal(HexBigInteger(1I), tx.Status)
     }
 
