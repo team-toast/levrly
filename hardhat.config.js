@@ -30,8 +30,7 @@ module.exports = {
       throwOnTransactionFailures: true,
       gasPrice: 0,
       forking: {
-      	url: "https://eth-mainnet.alchemyapi.io/v2/5VaoQ3iNw3dVPD_PNwd5I69k3vMvdnNj",
-      	blockNumber: 12330245
+      	url: "https://eth-mainnet.alchemyapi.io/v2/5VaoQ3iNw3dVPD_PNwd5I69k3vMvdnNj"
       }
     }
   }
