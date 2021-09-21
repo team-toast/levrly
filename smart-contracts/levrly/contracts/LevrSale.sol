@@ -6,6 +6,14 @@ import "@openzeppelin/contracts/token/ERC20/ERC20Burnable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20Mintable.sol";
 import "./DSMath.sol";
 
+contract SaleGulper is DSMath
+{
+    using SafeMath for uint256;
+
+    // TODO : make a contract that gulps Ether into 50% RAI and 50% ether and buys burns 
+    // BPT tokens on the gravity well pool (by sending them to 0x01)
+}
+
 contract Faucet is DSMath
 {
     using SafeMath for uint256;
@@ -110,11 +118,13 @@ contract Sale is DSMath
         buy(msg.sender);
     }
 
-    function buy(address _retriever)
+    function buy(address _retriever, uint _minTokensAssigned)
         public
         payable
     {
         uint tokensAssigned = calculateTokensReceived(msg.value);
+        require(_minTokensAssigned >= tokensAssigned, "too few tokens returned");
+
         assignTokens(_retriever, tokensAssigned);
         (bool success,) = gulper.call.value(msg.value)("");
         require(success, "gulper malfunction");
