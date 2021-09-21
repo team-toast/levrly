@@ -145,7 +145,7 @@ contract Sale is DSMath
         require(register[msg.sender].releaseTime <= block.timestamp, "cooldown pending");
         uint amount = register[msg.sender].amount;
 
-        tokenOnSale.mint(_receiver, amount);               // 4/9
+        tokenOnSale.mint(_receiver, amount);                // 4/9
         tokenOnSale.mint(treasury, amount.div(2));          // 2/9
         tokenOnSale.mint(liquidity, amount.div(2));         // 2/9
         tokenOnSale.mint(foundryTreasury, amount.div(4));   // 1/9
