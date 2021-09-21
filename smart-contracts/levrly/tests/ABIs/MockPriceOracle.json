@@ -1,0 +1,122 @@
+{
+    "contractName": "MockPriceOracle",
+    "abi": [
+        {
+            "inputs": [
+                {
+                    "internalType": "address",
+                    "name": "originalPriceOracle",
+                    "type": "address"
+                }
+            ],
+            "stateMutability": "nonpayable",
+            "type": "constructor"
+        },
+        {
+            "anonymous": false,
+            "inputs": [
+                {
+                    "indexed": false,
+                    "internalType": "address",
+                    "name": "_asset",
+                    "type": "address"
+                },
+                {
+                    "indexed": false,
+                    "internalType": "uint256",
+                    "name": "_price",
+                    "type": "uint256"
+                },
+                {
+                    "indexed": false,
+                    "internalType": "uint256",
+                    "name": "timestamp",
+                    "type": "uint256"
+                }
+            ],
+            "name": "AssetPriceUpdated",
+            "type": "event"
+        },
+        {
+            "anonymous": false,
+            "inputs": [
+                {
+                    "indexed": false,
+                    "internalType": "uint256",
+                    "name": "_price",
+                    "type": "uint256"
+                },
+                {
+                    "indexed": false,
+                    "internalType": "uint256",
+                    "name": "timestamp",
+                    "type": "uint256"
+                }
+            ],
+            "name": "EthPriceUpdated",
+            "type": "event"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "address",
+                    "name": "_asset",
+                    "type": "address"
+                }
+            ],
+            "name": "getAssetPrice",
+            "outputs": [
+                {
+                    "internalType": "uint256",
+                    "name": "",
+                    "type": "uint256"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "address",
+                    "name": "_asset",
+                    "type": "address"
+                },
+                {
+                    "internalType": "uint256",
+                    "name": "_price",
+                    "type": "uint256"
+                }
+            ],
+            "name": "setAssetPrice",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        }
+    ],
+    "metadata": "{\"compiler\":{\"version\":\"0.8.7+commit.e28d00a7\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"originalPriceOracle\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"_asset\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"_price\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"timestamp\",\"type\":\"uint256\"}],\"name\":\"AssetPriceUpdated\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"_price\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"timestamp\",\"type\":\"uint256\"}],\"name\":\"EthPriceUpdated\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_asset\",\"type\":\"address\"}],\"name\":\"getAssetPrice\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_asset\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_price\",\"type\":\"uint256\"}],\"name\":\"setAssetPrice\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"title\":\"Mock contract for AaveOracle*\",\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"c:/Users/mprokazin/source/red-duck/levrly/smart-contracts/levrly/tests/TestContracts/MockPriceOracle.sol\":\"MockPriceOracle\"},\"evmVersion\":\"london\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[]},\"sources\":{\"c:/Users/mprokazin/source/red-duck/levrly/smart-contracts/levrly/tests/TestContracts/MockPriceOracle.sol\":{\"keccak256\":\"0x36381990e194463de74d65b51e1ee3cdd8a566a6f4dad58838f862b3141adcdb\",\"license\":\"agpl-3.0\",\"urls\":[\"bzz-raw://d181e907ab0629f1c2eaa4ea5b07ea1d8a24008a4c609d9504215eec7f71e599\",\"dweb:/ipfs/Qma3HkpojGwE3SXLV8AwK6v5bHuMUu4i4CaHW6ghGdwqxM\"]}},\"version\":1}",
+    "bytecode": "608060405234801561001057600080fd5b506040516102bd3803806102bd83398101604081905261002f91610054565b600080546001600160a01b0319166001600160a01b0392909216919091179055610084565b60006020828403121561006657600080fd5b81516001600160a01b038116811461007d57600080fd5b9392505050565b61022a806100936000396000f3fe608060405234801561001057600080fd5b50600436106100365760003560e01c806351323f721461003b578063b3596f0714610050575b600080fd5b61004e6100493660046101b1565b610075565b005b61006361005e366004610196565b6100d2565b60405190815260200160405180910390f35b6001600160a01b038216600081815260016020908152604091829020849055815192835282018390524282820152517fce6e0b57367bae95ca7198e1172f653ea64a645c16ab586b4cefa9237bfc2d929181900360600190a15050565b6001600160a01b038116600090815260016020526040812054806101745760005460405163b3596f0760e01b81526001600160a01b0385811660048301529091169063b3596f079060240160206040518083038186803b15801561013557600080fd5b505afa158015610149573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061016d91906101db565b9392505050565b92915050565b80356001600160a01b038116811461019157600080fd5b919050565b6000602082840312156101a857600080fd5b61016d8261017a565b600080604083850312156101c457600080fd5b6101cd8361017a565b946020939093013593505050565b6000602082840312156101ed57600080fd5b505191905056fea26469706673582212208a815c0189ca336e9f5ce28599ff7f7298b28096e1a6662d7c745bf3755de84964736f6c63430008070033",
+    "deployedBytecode": "608060405234801561001057600080fd5b50600436106100365760003560e01c806351323f721461003b578063b3596f0714610050575b600080fd5b61004e6100493660046101b1565b610075565b005b61006361005e366004610196565b6100d2565b60405190815260200160405180910390f35b6001600160a01b038216600081815260016020908152604091829020849055815192835282018390524282820152517fce6e0b57367bae95ca7198e1172f653ea64a645c16ab586b4cefa9237bfc2d929181900360600190a15050565b6001600160a01b038116600090815260016020526040812054806101745760005460405163b3596f0760e01b81526001600160a01b0385811660048301529091169063b3596f079060240160206040518083038186803b15801561013557600080fd5b505afa158015610149573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061016d91906101db565b9392505050565b92915050565b80356001600160a01b038116811461019157600080fd5b919050565b6000602082840312156101a857600080fd5b61016d8261017a565b600080604083850312156101c457600080fd5b6101cd8361017a565b946020939093013593505050565b6000602082840312156101ed57600080fd5b505191905056fea26469706673582212208a815c0189ca336e9f5ce28599ff7f7298b28096e1a6662d7c745bf3755de84964736f6c63430008070033",
+    "sourceMap": "226:826:0:-:0;;;352:97;;;;;;;;;;;;;;;;;;;;;;;;;;;;:::i;:::-;401:20;:42;;-1:-1:-1;;;;;;401:42:0;-1:-1:-1;;;;;401:42:0;;;;;;;;;;226:826;;14:290:1;84:6;137:2;125:9;116:7;112:23;108:32;105:52;;;153:1;150;143:12;105:52;179:16;;-1:-1:-1;;;;;224:31:1;;214:42;;204:70;;270:1;267;260:12;204:70;293:5;14:290;-1:-1:-1;;;14:290:1:o;:::-;226:826:0;;;;;;",
+    "deployedSourceMap": "226:826:0:-:0;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;887:162;;;;;;:::i;:::-;;:::i;:::-;;597:284;;;;;;:::i;:::-;;:::i;:::-;;;1535:25:1;;;1523:2;1508:18;597:284:0;;;;;;;887:162;-1:-1:-1;;;;;958:14:0;;;;;;:6;:14;;;;;;;;;:23;;;993:50;;1241:51:1;;;1308:18;;1301:34;;;1027:15:0;1351:18:1;;;1344:34;993:50:0;;;;;;1229:2:1;993:50:0;;;887:162;;:::o;597:284::-;-1:-1:-1;;;;;706:14:0;;668:7;706:14;;;:6;:14;;;;;;731:16;727:149;;784:20;;765:62;;-1:-1:-1;;;765:62:0;;-1:-1:-1;;;;;995:32:1;;;765:62:0;;;977:51:1;784:20:0;;;;765:54;;950:18:1;;765:62:0;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;:::i;:::-;758:69;597:284;-1:-1:-1;;;597:284:0:o;727:149::-;857:11;597:284;-1:-1:-1;;597:284:0:o;14:173:1:-;82:20;;-1:-1:-1;;;;;131:31:1;;121:42;;111:70;;177:1;174;167:12;111:70;14:173;;;:::o;192:186::-;251:6;304:2;292:9;283:7;279:23;275:32;272:52;;;320:1;317;310:12;272:52;343:29;362:9;343:29;:::i;383:254::-;451:6;459;512:2;500:9;491:7;487:23;483:32;480:52;;;528:1;525;518:12;480:52;551:29;570:9;551:29;:::i;:::-;541:39;627:2;612:18;;;;599:32;;-1:-1:-1;;;383:254:1:o;642:184::-;712:6;765:2;753:9;744:7;740:23;736:32;733:52;;;781:1;778;771:12;733:52;-1:-1:-1;804:16:1;;642:184;-1:-1:-1;642:184:1:o",
+    "sourcePath": "c:/Users/mprokazin/source/red-duck/levrly/smart-contracts/levrly/tests/TestContracts/MockPriceOracle.sol",
+    "compiler": {
+        "name": "solc",
+        "version": "0.8.7+commit.e28d00a7"
+    },
+    "functionHashes": {
+        "getAssetPrice(address)": "b3596f07",
+        "setAssetPrice(address,uint256)": "51323f72"
+    },
+    "gasEstimates": {
+        "creation": {
+            "codeDepositCost": "110800",
+            "executionCost": "infinite",
+            "totalCost": "infinite"
+        },
+        "external": {
+            "getAssetPrice(address)": "infinite",
+            "setAssetPrice(address,uint256)": "24114"
+        }
+    }
+}

@@ -1,0 +1,38 @@
+{
+    "contractName": "IPriceOracleGetter",
+    "abi": [
+        {
+            "inputs": [
+                {
+                    "internalType": "address",
+                    "name": "asset",
+                    "type": "address"
+                }
+            ],
+            "name": "getAssetPrice",
+            "outputs": [
+                {
+                    "internalType": "uint256",
+                    "name": "",
+                    "type": "uint256"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        }
+    ],
+    "metadata": "{\"compiler\":{\"version\":\"0.8.7+commit.e28d00a7\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"asset\",\"type\":\"address\"}],\"name\":\"getAssetPrice\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"c:/Users/mprokazin/source/red-duck/levrly/smart-contracts/levrly/tests/TestContracts/MockPriceOracle.sol\":\"IPriceOracleGetter\"},\"evmVersion\":\"london\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[]},\"sources\":{\"c:/Users/mprokazin/source/red-duck/levrly/smart-contracts/levrly/tests/TestContracts/MockPriceOracle.sol\":{\"keccak256\":\"0x36381990e194463de74d65b51e1ee3cdd8a566a6f4dad58838f862b3141adcdb\",\"license\":\"agpl-3.0\",\"urls\":[\"bzz-raw://d181e907ab0629f1c2eaa4ea5b07ea1d8a24008a4c609d9504215eec7f71e599\",\"dweb:/ipfs/Qma3HkpojGwE3SXLV8AwK6v5bHuMUu4i4CaHW6ghGdwqxM\"]}},\"version\":1}",
+    "bytecode": "",
+    "deployedBytecode": "",
+    "sourceMap": "",
+    "deployedSourceMap": "",
+    "sourcePath": "c:/Users/mprokazin/source/red-duck/levrly/smart-contracts/levrly/tests/TestContracts/MockPriceOracle.sol",
+    "compiler": {
+        "name": "solc",
+        "version": "0.8.7+commit.e28d00a7"
+    },
+    "functionHashes": {
+        "getAssetPrice(address)": "b3596f07"
+    },
+    "gasEstimates": null
+}
