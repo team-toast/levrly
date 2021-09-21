@@ -117,13 +117,13 @@ let ``DAI price changed`` () =
         let! oldPriceOracleAddress = await ^ lpAddressProvider.getPriceOracleQueryAsync()
         let! priceOracle = deployContract ctx (priceOracleAt ctx) [ oldPriceOracleAddress ]
 
-        let! daiPrice = await ^ priceOracle.getAssetPriceQueryAsync(configration.Addresses.Dai)
+        let! daiPrice = await ^ priceOracle.getAssetPriceQueryAsync(configuration.Addresses.Dai)
         Assert.Equal(371400000000000I, daiPrice)
         
         do! Aave.setPriceOracle ctx lpAddressProvider priceOracle.Address
-        let! txr = Aave.setAssetPrice ctx priceOracle configration.Addresses.Dai 471400000000000I
+        let! txr = Aave.setAssetPrice ctx priceOracle configuration.Addresses.Dai 471400000000000I
         
-        let! daiPrice = await ^ priceOracle.getAssetPriceQueryAsync(configration.Addresses.Dai)
+        let! daiPrice = await ^ priceOracle.getAssetPriceQueryAsync(configuration.Addresses.Dai)
         Assert.Equal(471400000000000I, daiPrice)
     }
 
@@ -137,8 +137,8 @@ let ``Asset prices are as expected`` () =
         
         let expected = {| Dai =  371400000000000I; 
                           Snx = 6286960000000000I |}
-        let! daiPrice = await ^ priceOracle.getAssetPriceQueryAsync(configration.Addresses.Dai)
-        let! snxPrice = await ^ priceOracle.getAssetPriceQueryAsync(configration.Addresses.Snx)
+        let! daiPrice = await ^ priceOracle.getAssetPriceQueryAsync(configuration.Addresses.Dai)
+        let! snxPrice = await ^ priceOracle.getAssetPriceQueryAsync(configuration.Addresses.Snx)
         let actual = {| Dai = daiPrice; Snx = snxPrice |}
         Assert.Equal(expected, actual)
     }
@@ -166,18 +166,18 @@ let ``Money lost`` () =
         let! acc = await ^ lendingPool.getUserAccountDataQueryAsync(ctx.Address)
         Assert.Equal(6I, acc.totalDebtETH)
         
-        do! Aave.setAssetPrice ctx priceOracle configration.Addresses.Snx 12286960000000000I
+        do! Aave.setAssetPrice ctx priceOracle configuration.Addresses.Snx 12286960000000000I
 
         // Assert user debt grown after borrowed asset price grown.
         let! acc = await ^ lendingPool.getUserAccountDataQueryAsync(ctx.Address)
         Assert.Equal(12I, acc.totalDebtETH)
 
-        let! txr = await ^ snx.approveAsync(configration.Addresses.AaveLendingPool, 3_000I)
+        let! txr = await ^ snx.approveAsync(configuration.Addresses.AaveLendingPool, 3_000I)
         Assert.Equal(~~~1UL, txr.Status)
 
         let! txr = 
             await ^ lendingPool.repayAsync(
-                asset = configration.Addresses.Snx,
+                asset = configuration.Addresses.Snx,
                 amount = 1_000I,
                 rateMode = Aave.interestRateMode.Variable,
                 onBehalfOf = ctx.Address)
@@ -213,18 +213,18 @@ let ``Liquidation can be done on account with bad health`` () =
                     $"Health factor was {acc.healthFactor}")
         
         // Decrease collaterall cost
-        do! Aave.setAssetPrice ctx priceOracle configration.Addresses.Dai 1I
+        do! Aave.setAssetPrice ctx priceOracle configuration.Addresses.Dai 1I
 
         // Assert account health factor below 1
         let! acc = await ^ lendingPool.getUserAccountDataQueryAsync(ctx.Address)
         Assert.Equal(127266942411708559I, acc.healthFactor)
 
         // Assert liquidator's DAI balance is zero before he get his reward for covering debt.
-        let! liquidatorDaiBalace = await ^ dai.balanceOfQueryAsync(configration.AccountAddress1)
+        let! liquidatorDaiBalace = await ^ dai.balanceOfQueryAsync(configuration.AccountAddress1)
         Assert.Equal(0I, liquidatorDaiBalace)
 
 
-        do! inNestedContextAsync configration.AccountPrivateKey1 
+        do! inNestedContextAsync configuration.AccountPrivateKey1 
             <| fun ctx -> async {
                 let snx = Contracts.snx ctx
                 let lendingPool = Contracts.lendingPool ctx
@@ -236,7 +236,7 @@ let ``Liquidation can be done on account with bad health`` () =
                     await ^ lendingPool.liquidationCallAsync(
                         collateralAsset = dai.Address,
                         debtAsset = snx.Address,
-                        user = configration.AccountAddress0,
+                        user = configuration.AccountAddress0,
                         debtToCover = 499_999I, // Half of debt minus one.
                         receiveAToken = false)
                 let event = Seq.head ^ LendingPool.LiquidationCallEventDTO.DecodeAllEvents(txr)
@@ -244,15 +244,15 @@ let ``Liquidation can be done on account with bad health`` () =
             }
         
         // Liquidator's SNX balance decreases. 151485 SNX spend on covering debt.
-        let! liquidatorSnxBalace = await ^ snx.balanceOfQueryAsync(configration.AccountAddress1)
+        let! liquidatorSnxBalace = await ^ snx.balanceOfQueryAsync(configuration.AccountAddress1)
         Assert.Equal(16414199999999999848515I, liquidatorSnxBalace)
 
         // So much DAI's recieved because it cost just 1 wei now.
-        let! liquidatorDaiBalace = await ^ dai.balanceOfQueryAsync(configration.AccountAddress1)
+        let! liquidatorDaiBalace = await ^ dai.balanceOfQueryAsync(configuration.AccountAddress1)
         Assert.Equal(1000000010835640852399I, liquidatorDaiBalace)
 
         // And collateral is lost.
-        let! liquidatedAccountADaiBalance = await ^ aDai.balanceOfQueryAsync(configration.AccountAddress0)
+        let! liquidatedAccountADaiBalance = await ^ aDai.balanceOfQueryAsync(configuration.AccountAddress0)
         Assert.Equal(0I, liquidatedAccountADaiBalance)
         
         // Health factor is 0 because whole collaterall lost.
@@ -286,13 +286,13 @@ let ``Liquidated account health more then 1`` () =
         Assert.True(``1e+18`` < acc.healthFactor, $"Health factor was {acc.healthFactor}")
         
         // Decrease collaterall cost twice
-        do! Aave.setAssetPrice ctx priceOracle configration.Addresses.Dai 185700000000000I
+        do! Aave.setAssetPrice ctx priceOracle configuration.Addresses.Dai 185700000000000I
 
         // Assert account health factor below 1
         let! acc = await ^ lendingPool.getUserAccountDataQueryAsync(ctx.Address)
         Assert.True(``1e+18`` > acc.healthFactor, $"Health factor was {acc.healthFactor}")
 
-        do! inNestedContextAsync configration.AccountPrivateKey1 
+        do! inNestedContextAsync configuration.AccountPrivateKey1 
             <| fun ctx -> async {
                 let snx = Contracts.snx ctx
                 let lendingPool = Contracts.lendingPool ctx
@@ -304,7 +304,7 @@ let ``Liquidated account health more then 1`` () =
                     await ^ lendingPool.liquidationCallAsync(
                         collateralAsset = dai.Address,
                         debtAsset = snx.Address,
-                        user = configration.AccountAddress0,
+                        user = configuration.AccountAddress0,
                         debtToCover = (20I * ``1e+18`` - 1I), // Half of debt minus one.
                         receiveAToken = false)
                 let event = Seq.head ^ LendingPool.LiquidationCallEventDTO.DecodeAllEvents(txr)
@@ -312,15 +312,15 @@ let ``Liquidated account health more then 1`` () =
             }
         
         // Liquidator's SNX balance decreases.
-        let! liquidatorSnxBalace = await ^ snx.balanceOfQueryAsync(configration.AccountAddress1)
+        let! liquidatorSnxBalace = await ^ snx.balanceOfQueryAsync(configuration.AccountAddress1)
         Assert.Equal(16394_000000000000000001I, liquidatorSnxBalace)
 
         // Lqiuidator receives DAI. 
-        let! liquidatorDaiBalace = await ^ dai.balanceOfQueryAsync(configration.AccountAddress1)
+        let! liquidatorDaiBalace = await ^ dai.balanceOfQueryAsync(configuration.AccountAddress1)
         Assert.Equal(710_964781906300484617I, liquidatorDaiBalace)
 
         // And collateral is partially lost.
-        let! liquidatedAccountADaiBalance = await ^ aDai.balanceOfQueryAsync(configration.AccountAddress0)
+        let! liquidatedAccountADaiBalance = await ^ aDai.balanceOfQueryAsync(configuration.AccountAddress0)
         Assert.Equal(289_035228929340367782I, liquidatedAccountADaiBalance)
         
         // Health factor increased.
@@ -330,20 +330,30 @@ let ``Liquidated account health more then 1`` () =
 
 open AbiTypeProvider.Common
 open Nethereum.Hex.HexTypes
+open Nethereum.Web3
+
+let approveAsync (web3: Web3) amount tokenAddress = async {
+    let (contractAddress, data, value, gasPrice) = OneInch.approve amount tokenAddress
+    let oneInch = Contracts.OneInch(contractAddress, web3)
+    let! tx = oneInch.SendTxAsync data (WeiValue(value)) (GasLimit(12450000I)) (GasPrice(gasPrice)) |> Async.AwaitTask
+    ()
+}
 
 [<Fact>]
 let ``Swap ETH to DAI using 1Inch`` () =
     withContextAsync
     <| fun ctx -> async {
+        //do! approveAsync ctx.Web3 ``1e+18`` "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" 
         let (contractAddress, data, value, gas, gasPrice) =
             OneInch.getSwapData
                 "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
                 "0x6b175474e89094c44da98b954eedeac495271d0f"
-                configration.AccountAddress0
-                ``1e+18``
+                configuration.AccountAddress0
+                10000 //``1e+18``
                 3
         let oneInch = Contracts.OneInch(contractAddress, ctx.Web3)
-        let! tx = oneInch.SendTxAsync data (WeiValue(value)) (GasLimit(gas)) (GasPrice(gasPrice)) |> Async.AwaitTask
+        let gas' = if gas = 0I then 12450000I else gas
+        let! tx = oneInch.SendTxAsync data (WeiValue(value)) (GasLimit(gas')) (GasPrice(gasPrice)) |> Async.AwaitTask
         Assert.Equal(HexBigInteger(1I), tx.Status)
     }
 
@@ -351,9 +361,10 @@ let ``Swap ETH to DAI using 1Inch`` () =
 let ``Swap ETH to DAI using ZeroEx`` () =
     withContextAsync
     <| fun ctx -> async {
-        let (contractAddress, data) =
-            ZeroEx.getSwapData "DAI" "WETH" 100000000000000000I
+        let (contractAddress, data, value, gas, gasPrice) =
+            ZeroEx.getSwapData "DAI" "ETH" 10000I
         let oneInch = Contracts.ZeroEx(contractAddress, ctx.Web3)
-        let! tx = oneInch.SendTxAsync data (WeiValue(0I)) (GasLimit(12450000I)) (GasPrice(1I)) |> Async.AwaitTask
+        let gas' = if gas = 0I then 12450000I else gas
+        let! tx = oneInch.SendTxAsync data (WeiValue(value)) (GasLimit(gas')) (GasPrice(gasPrice)) |> Async.AwaitTask
         Assert.Equal(HexBigInteger(1I), tx.Status)
     }
