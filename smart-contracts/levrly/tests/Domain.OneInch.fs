@@ -1,6 +1,9 @@
 [<RequireQualifiedAccess>]
 module Domain.OneInch
 
+#r "nuget: FSharp.Data"
+#r "nuget: Newtonsoft.Json"
+
 open System.Numerics
 open FSharp.Data
 open Newtonsoft.Json
@@ -34,6 +37,9 @@ let getSwapData fromTokenAddress toTokenAddress fromAddress amount slippage  =
                       "toTokenAddress", toTokenAddress;
                       "fromAddress", IntermediateAddress;
                       "amount", amount.ToString();
+                      "destReceiver", fromAddress;
+                      "allowPartialFill", "true";
+                      "disableEstimate", "true";
                       "slippage", slippage.ToString() ],
                 headers = [ "Accept", "application/json" ])
         |> JsonConvert.DeserializeObject<Linq.JObject>
@@ -44,3 +50,18 @@ let getSwapData fromTokenAddress toTokenAddress fromAddress amount slippage  =
     let gas = tx.Value<int>("gas") |> bigint
     let gasPrice = tx.Value<string>("gasPrice") |> BigInteger.Parse
     (toAddress, data, value, gas, gasPrice)
+
+let approve amount tokenAddress =
+    let json = 
+        Http.RequestString
+            ( $"{BaseApiUrl}approve/calldata", httpMethod = "GET",
+                query   =
+                    [ "amount", amount.ToString();
+                      "tokenAddress", tokenAddress ],
+                headers = [ "Accept", "application/json" ])
+        |> JsonConvert.DeserializeObject<Linq.JObject>
+    let toAddress = string json.["to"]
+    let data = string json.["data"]
+    let value = json.Value<string>("value") |> BigInteger.Parse
+    let gasPrice = json.Value<string>("gasPrice") |> BigInteger.Parse
+    (toAddress, data, value, gasPrice)
