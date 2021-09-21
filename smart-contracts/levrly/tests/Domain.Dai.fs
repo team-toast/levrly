@@ -33,7 +33,7 @@ let grab (ctx: TestContext) (dai: DAI) amount = async {
 
 let approveLendingPool (ctx: TestContext) (dai: DAI) amount = async {
     let dollar amount = decimal (10f ** 18f) * amount |> bigint
-    let! txr = await ^ dai.approveAsync(configration.Addresses.AaveLendingPool, dollar amount)
+    let! txr = await ^ dai.approveAsync(configuration.Addresses.AaveLendingPool, dollar amount)
     if txr.Status <> ~~~ 1UL then
         failwith "Transaction not succeed"
     

@@ -19,7 +19,7 @@ type ZeroEx = Contracts.ZeroExContract
 type OneInch = Contracts.OneInchContract
 
 let lendingPool (ctx: TestContext) = 
-    let address = configration.Addresses.AaveLendingPool
+    let address = configuration.Addresses.AaveLendingPool
     LendingPool(address, ctx.Web3)
 
 let protocolDataProvider (ctx: TestContext) = 
@@ -27,15 +27,15 @@ let protocolDataProvider (ctx: TestContext) =
     ProtocolDataProvider(address, ctx.Web3)
 
 let dai (ctx: TestContext) = 
-    let address = configration.Addresses.Dai
+    let address = configuration.Addresses.Dai
     DAI(address, ctx.Web3)
 
 let aDai (ctx: TestContext) = 
-    let address = configration.Addresses.aDai
+    let address = configuration.Addresses.aDai
     ERC20(address, ctx.Web3)
 
 let snx (ctx: TestContext) =
-    let address = configration.Addresses.Snx
+    let address = configuration.Addresses.Snx
     ERC20(address, ctx.Web3)
 
 let erc20 (ctx: TestContext) address =

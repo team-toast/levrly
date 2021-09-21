@@ -13,7 +13,7 @@ open Domain
 let interestRateMode = {| Stable = bigint 1; Variable = bigint 2 |}
 
 let depositDai (ctx: TestContext) (lendingPool: LendingPool) amount = async {
-    let! txr = lendingPool.depositAsync(configration.Addresses.Dai,
+    let! txr = lendingPool.depositAsync(configuration.Addresses.Dai,
                                         Dai.dollar amount, 
                                         ctx.Connection.Account.Address, 
                                         uint16 0) |> Async.AwaitTask
@@ -30,7 +30,7 @@ let depositDai (ctx: TestContext) (lendingPool: LendingPool) amount = async {
 }
 
 let depositSnx (ctx: TestContext) (lendingPool: LendingPool) amount = async {
-    let! txr = lendingPool.depositAsync(configration.Addresses.Snx,
+    let! txr = lendingPool.depositAsync(configuration.Addresses.Snx,
                                         amount, 
                                         ctx.Connection.Account.Address, 
                                         uint16 0) |> Async.AwaitTask
@@ -47,7 +47,7 @@ let depositSnx (ctx: TestContext) (lendingPool: LendingPool) amount = async {
 }
 
 let borrowSnx (ctx: TestContext) (lendingPool: LendingPool) amount = async {
-    let! txr = await ^ lendingPool.borrowAsync(configration.Addresses.Snx, amount, interestRateMode.Variable, 0us, ctx.Address)
+    let! txr = await ^ lendingPool.borrowAsync(configuration.Addresses.Snx, amount, interestRateMode.Variable, 0us, ctx.Address)
     if txr.Status <> ~~~ 1UL then
         failwith "Transaction not succeed"
     let event = 
@@ -84,7 +84,7 @@ let setAssetPrice
             weiValue = weiValue 0UL,
             gasLimit = gasLlimit 9500000UL,
             gasPrice = gasPrice 0UL,
-            From = configration.AavePriceOracleOwnerAddress,
+            From = configuration.AavePriceOracleOwnerAddress,
             To = priceOracle.Address)
     let! txr = ctx.Connection.MakeImpersonatedCallAsync callData
     

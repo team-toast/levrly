@@ -29,7 +29,7 @@ let grab (ctx: TestContext) (token: ERC20) from amount = async {
 
 let approveLendingPool (ctx: TestContext) (token: ERC20) amount = async {
     try
-        let! txr = await ^ token.approveAsync(configration.Addresses.AaveLendingPool, amount)
+        let! txr = await ^ token.approveAsync(configuration.Addresses.AaveLendingPool, amount)
         
         if txr.Status <> ~~~ 1UL then
             failwith "Transaction not succeed"

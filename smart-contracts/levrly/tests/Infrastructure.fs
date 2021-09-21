@@ -19,7 +19,7 @@ open Nethereum.RPC
 open ContractDeployment
 
 /// Common configuration values.
-let configration = 
+let configuration = 
   {|Addresses = 
       {|AaveLendingPool = "0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9"
         AaveProtocolDataProvider = "0x057835Ad21a177dbdd3090bB1CAE03EaCF78Fc6d"
@@ -157,7 +157,7 @@ type TestContext(privateKey: string, preserveState: bool) =
     
     do if not preserveState then connection.HardhatResetAsync.Wait()
 
-    new() = new TestContext(configration.AccountPrivateKey0, false)
+    new() = new TestContext(configuration.AccountPrivateKey0, false)
 
 
     member _.Web3 = connection.Web3
