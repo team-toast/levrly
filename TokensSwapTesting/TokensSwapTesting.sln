@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31613.86
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "TokensSwapTesting", "TokensSwapTesting\TokensSwapTesting.fsproj", "{B38F0925-1A54-424D-821C-28F7DA27BECA}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B38F0925-1A54-424D-821C-28F7DA27BECA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B38F0925-1A54-424D-821C-28F7DA27BECA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B38F0925-1A54-424D-821C-28F7DA27BECA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B38F0925-1A54-424D-821C-28F7DA27BECA}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {693EE5D3-23E8-4061-855D-64839EA69793}
+	EndGlobalSection
+EndGlobal

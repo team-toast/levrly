@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net5.0</TargetFramework>
+    <WarnOn>3390;$(WarnOn)</WarnOn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Contracts.fs" />
+    <Compile Include="OneInch.fs" />
+    <Compile Include="Program.fs" />
+  </ItemGroup>
+	
+  <ItemGroup>
+	<PackageReference Include="FSharp.Data" Version="4.2.2" />
+	<PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.9.4" />
+	<PackageReference Include="Nethereum.Web3" Version="4.0.5" />
+	<PackageReference Include="AbiTypeProvider" Version="0.0.6" />
+  </ItemGroup>
+
+</Project>

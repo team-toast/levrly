@@ -25,7 +25,7 @@ module.exports = {
   solidity: "0.5.17",
   networks: {
     hardhat: {
-      chainId: 1337,
+      chainId: 1,
       throwOnCallFailures: true,
       throwOnTransactionFailures: true,
       gasPrice: 0,
