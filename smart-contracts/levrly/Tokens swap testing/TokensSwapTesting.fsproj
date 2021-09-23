@@ -7,8 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="Contracts.fs" />
-    <Compile Include="OneInch.fs" />
+    <!--<Compile Include="Contracts.fs" />
+    <Compile Include="OneInch.fs" />-->
     <Compile Include="Program.fs" />
   </ItemGroup>
 	
@@ -17,6 +17,10 @@
 	<PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.9.4" />
 	<PackageReference Include="Nethereum.Web3" Version="4.0.5" />
 	<PackageReference Include="AbiTypeProvider" Version="0.0.6" />
+  </ItemGroup>
+	
+  <ItemGroup>
+    <ProjectReference Include="..\Unit tests\Leverly.Tests.fsproj" />
   </ItemGroup>
 
 </Project>

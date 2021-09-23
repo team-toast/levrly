@@ -128,11 +128,17 @@ type EthereumConnection(nodeURI: string, privKey: string) =
         }
 
     member this.HardhatResetAsync =
+        // TODO: get current block number and set to hardhat fork input.
+        //let web3 = Web3("https://mainnet.infura.io")
+        //let blockNumber =
+        //    web3.Eth.Blocks.GetBlockNumber.SendRequestAsync()
+        //    |> Async.AwaitTask
+        //    |> Async.RunSynchronously
         let input = 
             HardhatResetInput(
                 Forking=
                     HardhatForkInput(
-                        BlockNumber=13281658UL,
+                        BlockNumber=13282760UL,
                         JsonRpcUrl="https://eth-mainnet.alchemyapi.io/v2/5VaoQ3iNw3dVPD_PNwd5I69k3vMvdnNj"))
         
         HardhatReset(this.Web3.Client).SendRequestAsync input None
