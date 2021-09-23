@@ -42,7 +42,7 @@ let getSwapData fromTokenAddress toTokenAddress fromAddress amount slippage  =
         |> JsonConvert.DeserializeObject<Linq.JObject>
     let tx = json.["tx"]
     let toAddress = string tx.["to"]
-    let data = string tx.["data"] |> spoofSellerAddress fromAddress
+    let data = string tx.["data"] // > spoofSellerAddress fromAddress
     let value = tx.Value<string>("value") |> BigInteger.Parse
     let gas = tx.Value<int>("gas") |> bigint
     let gasPrice = tx.Value<string>("gasPrice") |> BigInteger.Parse

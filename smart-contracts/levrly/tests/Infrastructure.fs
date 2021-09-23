@@ -132,7 +132,7 @@ type EthereumConnection(nodeURI: string, privKey: string) =
             HardhatResetInput(
                 Forking=
                     HardhatForkInput(
-                        BlockNumber=12330245UL,
+                        BlockNumber=13281658UL,
                         JsonRpcUrl="https://eth-mainnet.alchemyapi.io/v2/5VaoQ3iNw3dVPD_PNwd5I69k3vMvdnNj"))
         
         HardhatReset(this.Web3.Client).SendRequestAsync input None

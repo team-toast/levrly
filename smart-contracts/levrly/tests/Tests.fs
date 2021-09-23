@@ -331,6 +331,7 @@ let ``Liquidated account health more then 1`` () =
 open AbiTypeProvider.Common
 open Nethereum.Hex.HexTypes
 open Nethereum.Web3
+open Nethereum.RPC.Eth.DTOs
 
 let approveAsync (web3: Web3) amount tokenAddress = async {
     let (contractAddress, data, value, gasPrice) = OneInch.approve amount tokenAddress
@@ -344,27 +345,48 @@ let ``Swap ETH to DAI using 1Inch`` () =
     withContextAsync
     <| fun ctx -> async {
         //do! approveAsync ctx.Web3 ``1e+18`` "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" 
+        printf "block number: %A\n" (ctx.Web3.Eth.Blocks.GetBlockNumber.SendRequestAsync() |> runNow) 
         let (contractAddress, data, value, gas, gasPrice) =
             OneInch.getSwapData
-                "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
-                "0x6b175474e89094c44da98b954eedeac495271d0f"
-                configuration.AccountAddress0
-                10000 //``1e+18``
+                "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" // Ether
+                "0x6b175474e89094c44da98b954eedeac495271d0f" // DAI
+                "0x52bc44d5378309ee2abf1539bf71de1b7d7be3b5" // Any random address that has a sufficient ether address
+                (HexBigInteger("10000000000000000")) 
                 3
-        let oneInch = Contracts.OneInch(contractAddress, ctx.Web3)
         let gas' = if gas = 0I then 12450000I else gas
-        let! tx = oneInch.SendTxAsync data (WeiValue(value)) (GasLimit(gas')) (GasPrice(gasPrice)) |> Async.AwaitTask
-        Assert.Equal(HexBigInteger(1I), tx.Status)
-    }
 
-[<Fact>]
-let ``Swap ETH to DAI using ZeroEx`` () =
-    withContextAsync
-    <| fun ctx -> async {
-        let (contractAddress, data, value, gas, gasPrice) =
-            ZeroEx.getSwapData "DAI" "ETH" 10000I
-        let oneInch = Contracts.ZeroEx(contractAddress, ctx.Web3)
-        let gas' = if gas = 0I then 12450000I else gas
-        let! tx = oneInch.SendTxAsync data (WeiValue(value)) (GasLimit(gas')) (GasPrice(gasPrice)) |> Async.AwaitTask
-        Assert.Equal(HexBigInteger(1I), tx.Status)
-    }
+        let callData = 
+            TransactionInput(
+                data=data, 
+                addressTo = contractAddress, 
+                addressFrom = "0x52bc44d5378309ee2abf1539bf71de1b7d7be3b5", 
+                gas = HexBigInteger(gas'), 
+                gasPrice = HexBigInteger(gasPrice),
+                value = HexBigInteger(value))
+
+        printf "gas price: %A\n" (gasPrice)
+
+        let dai = dai ctx    
+        let daiBefore = dai.balanceOfQueryAsync("0x52bc44d5378309ee2abf1539bf71de1b7d7be3b5") |> runNow
+        let! txr = ctx.Connection.MakeImpersonatedCallAsync callData 
+        let daiAfter = dai.balanceOfQueryAsync("0x52bc44d5378309ee2abf1539bf71de1b7d7be3b5") |> runNow
+
+        Assert.NotEqual(daiBefore, daiAfter);
+
+        printf "daiBefore: %A\n" daiBefore
+        printf "daiAfter: %A\n" daiAfter
+
+        Assert.Equal(HexBigInteger(1I), txr.Status)
+    } 
+
+// [<Fact>]
+// let ``Swap ETH to DAI using ZeroEx`` () =
+//     withContextAsync
+//     <| fun ctx -> async {
+//         let (contractAddress, data, value, gas, gasPrice) =
+//             ZeroEx.getSwapData "DAI" "ETH" 10000I
+//         let oneInch = Contracts.ZeroEx(contractAddress, ctx.Web3)
+//         let gas' = if gas = 0I then 12450000I else gas
+//         let! tx = oneInch.SendTxAsync data (WeiValue(value)) (GasLimit(gas')) (GasPrice(gasPrice)) |> Async.AwaitTask
+//         Assert.Equal(HexBigInteger(1I), tx.Status)
+//     }
