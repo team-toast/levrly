@@ -7,6 +7,7 @@ open System.IO
 open System.Net.Http
 open System.Numerics
 open Microsoft.FSharp.Control
+open FSharp.Data
 open Newtonsoft.Json
 open Nethereum
 open Nethereum.Contracts
@@ -32,7 +33,10 @@ let configuration =
     AccountAddress0 = "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"
     AccountAddress1 = "0x70997970c51812dc3a010c7d01b50e0d17dc79c8"
     AccountPrivateKey0 = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
-    AccountPrivateKey1 = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"|}
+    AccountPrivateKey1 = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"
+    JsonRpcUrl = "https://eth-mainnet.alchemyapi.io/v2/5VaoQ3iNw3dVPD_PNwd5I69k3vMvdnNj"
+    EtherscanApiKey = "H7VWS7XRGI3CVHRBSVZCE5IW5J8KQBVFVE"
+    RpcTimeoutInSeconds = 100.|}
 
 /// Equal of 'uint(-1)' in solidity.
 let uint256MaxValue = 
@@ -43,6 +47,28 @@ let private hexBigInt (n: uint64) = HexBigInteger(BigInteger(n))
 type private EvmSnapshot(client) = inherit RpcRequestResponseHandlerNoParam<string>(client, "evm_snapshot")
 
 let ``1e+18`` = 1_000_000_000_000_000_000I
+
+let getLatestBlockNumberUsingForkJsonRpc () =
+    let web3 = Web3(configuration.JsonRpcUrl)
+    web3.Eth.Blocks.GetBlockNumber.SendRequestAsync()
+           |> Async.AwaitTask
+           |> Async.RunSynchronously
+
+// TODO: check which network uses for tests
+let getLatesBlockNumberUsingEtherscan () =
+    let timestampInSeconds = DateTimeOffset(DateTime.UtcNow).AddMinutes(-1.5).ToUnixTimeSeconds()
+    let json = 
+        Http.RequestString
+            ( $"https://api.etherscan.io/api", httpMethod = "GET",
+                query   =
+                    [ "module", "block";
+                      "action", "getblocknobytime";
+                      "timestamp", timestampInSeconds.ToString();
+                      "closest", "before";
+                      "apikey", configuration.EtherscanApiKey ],
+                headers = [ "Accept", "application/json" ])
+        |> JsonConvert.DeserializeObject<Linq.JObject>
+    json.Value<string>("result") |> Convert.ToUInt64
 
 type HardhatForkInput() =
     [<JsonProperty(PropertyName = "jsonRpcUrl")>]
@@ -128,19 +154,12 @@ type EthereumConnection(nodeURI: string, privKey: string) =
         }
 
     member this.HardhatResetAsync =
-        // TODO: get current block number and set to hardhat fork input.
-        //let web3 = Web3("https://mainnet.infura.io")
-        //let blockNumber =
-        //    web3.Eth.Blocks.GetBlockNumber.SendRequestAsync()
-        //    |> Async.AwaitTask
-        //    |> Async.RunSynchronously
         let input = 
             HardhatResetInput(
                 Forking=
                     HardhatForkInput(
-                        BlockNumber=13282760UL,
-                        JsonRpcUrl="https://eth-mainnet.alchemyapi.io/v2/5VaoQ3iNw3dVPD_PNwd5I69k3vMvdnNj"))
-        
+                        BlockNumber=getLatesBlockNumberUsingEtherscan(),
+                        JsonRpcUrl=configuration.JsonRpcUrl))
         HardhatReset(this.Web3.Client).SendRequestAsync input None
 
     member this.DeployContract (abi: Abi) (constructorParams: list<#obj>) =
@@ -160,6 +179,7 @@ type EthereumConnection(nodeURI: string, privKey: string) =
 
 type TestContext(privateKey: string, preserveState: bool) =
     let connection = EthereumConnection("http://127.0.0.1:8545/", privateKey)
+    do Nethereum.JsonRpc.Client.ClientBase.ConnectionTimeout <-  TimeSpan.FromSeconds(configuration.RpcTimeoutInSeconds)
     
     do if not preserveState then connection.HardhatResetAsync.Wait()
 
