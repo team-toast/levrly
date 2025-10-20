@@ -1,5 +1,6 @@
 pragma solidity ^0.5.0;
 
+import "@openzeppelin/contracts/math/Math.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20Detailed.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20Burnable.sol";
@@ -55,6 +56,25 @@ contract Faucet is DSMath
             .mul(totalSupply)
             .sub(totalSupply);
     }
+}
+
+contract RewardLocker is DSMath
+{
+    using SafeMath for uint256;
+
+    struct Deposit
+    {
+        uint amount;
+        uint lockUpPeriod;
+        uint share;
+    }
+
+    mapping (address => uint) shares;
+
+    function stake(uint _amount, uint _time, address _retriever) public;
+    function claim(address _recipient) public;
+
+    function 
 }
 
 contract Sale is DSMath
@@ -118,12 +138,11 @@ contract Sale is DSMath
         buy(msg.sender);
     }
 
-    function buy(address _retriever, uint _minTokensAssigned)
+    function buy(address _retriever)
         public
         payable
     {
         uint tokensAssigned = calculateTokensReceived(msg.value);
-        require(_minTokensAssigned >= tokensAssigned, "too few tokens returned");
 
         assignTokens(_retriever, tokensAssigned);
         (bool success,) = gulper.call.value(msg.value)("");
@@ -136,7 +155,7 @@ contract Sale is DSMath
         private
     {
         register[_retriever].releaseTime = block.timestamp.add(5 days);
-        register[_retriever].amount = _amount;
+        register[_retriever].amount = register[_retriever].amount.add(_amount);
     }
 
     function claimTokens(address _receiver)
@@ -145,10 +164,10 @@ contract Sale is DSMath
         require(register[msg.sender].releaseTime <= block.timestamp, "cooldown pending");
         uint amount = register[msg.sender].amount;
 
-        tokenOnSale.mint(_receiver, amount);                // 4/9
-        tokenOnSale.mint(treasury, amount.div(2));          // 2/9
-        tokenOnSale.mint(liquidity, amount.div(2));         // 2/9
-        tokenOnSale.mint(foundryTreasury, amount.div(4));   // 1/9
+        tokenOnSale.mint(_receiver, amount);                // 4/7
+        tokenOnSale.mint(treasury, amount.div(7));          // 1/7
+        tokenOnSale.mint(liquidity, amount.div(7));         // 1/7
+        tokenOnSale.mint(foundryTreasury, amount.div(7));   // 1/7
 
         register[msg.sender].releaseTime = 0;
         register[msg.sender].amount = 0;
